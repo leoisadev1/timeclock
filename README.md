@@ -68,8 +68,10 @@ Then, run the development server:
 bun run dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
+Open `https://timeclock.localhost` (or `https://timeclock.localhost:1355` if portless falls back to 1355) in your browser to see the web application.
 Your app will connect to the Convex cloud backend automatically.
+
+Portless is configured for web at the repo level (`apps/web` is mapped to `timeclock`) so the URL stays stable across restarts.
 
 ## UI Customization
 
