@@ -54,7 +54,7 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
         </div>
       </header>
 
-      <section className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Metric
           label="Published shifts"
           value={todaysShifts.length}
@@ -86,9 +86,9 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)]">
-        <div className="min-w-0 border">
-          <div className="flex items-center justify-between border-b px-3 py-2">
-            <h2 className="text-sm font-medium">Schedule and attendance</h2>
+        <div className="min-w-0 overflow-hidden rounded-xl shadow-sm ring-1 ring-foreground/8">
+          <div className="flex items-center justify-between bg-card px-4 py-3 border-b">
+            <h2 className="text-sm font-semibold">Schedule and attendance</h2>
             <Button variant="outline" size="sm" onClick={() => onNavigate("schedule")}>
               Schedule <ArrowRightIcon />
             </Button>
@@ -168,8 +168,8 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
             })}
           </StatusRail>
 
-          <div className="border p-3">
-            <h2 className="text-sm font-medium">Quick links</h2>
+          <div className="overflow-hidden rounded-xl shadow-sm ring-1 ring-foreground/8 bg-card p-4">
+            <h2 className="text-sm font-semibold">Quick links</h2>
             <div className="mt-3 grid gap-2">
               <Button variant="outline" onClick={() => onNavigate("schedule")}>
                 Review next week
@@ -205,20 +205,22 @@ function Metric({
     danger: "text-destructive",
   }[tone];
 
-  const leftBorderClass = {
-    neutral: "border-l-border",
-    success: "border-l-emerald-500",
-    warning: "border-l-amber-500",
-    danger: "border-l-destructive",
+  const bgClass = {
+    neutral: "bg-card",
+    success: "bg-emerald-500/8 dark:bg-emerald-500/10",
+    warning: "bg-amber-500/8 dark:bg-amber-500/10",
+    danger: "bg-destructive/8 dark:bg-destructive/10",
   }[tone];
 
   return (
-    <div className={`border border-l-4 p-3 ${leftBorderClass}`}>
+    <div className={`rounded-xl p-4 shadow-sm ring-1 ring-foreground/8 transition-all duration-200 hover:shadow-md ${bgClass}`}>
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <Icon className={`size-4 ${iconClass}`} strokeWidth={1.8} />
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <div className={`flex size-7 items-center justify-center rounded-full bg-background/80 ${iconClass}`}>
+          <Icon className="size-3.5" strokeWidth={2} />
+        </div>
       </div>
-      <p className="mt-2 text-2xl font-semibold tabular-nums">{value}</p>
+      <p className="mt-3 text-3xl font-bold tabular-nums tracking-tight">{value}</p>
       <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
     </div>
   );
@@ -270,12 +272,12 @@ function StatusRail({
   children: ReactNode;
 }) {
   return (
-    <div className="border">
-      <div className="flex items-center gap-2 border-b px-3 py-2">
+    <div className="overflow-hidden rounded-xl shadow-sm ring-1 ring-foreground/8">
+      <div className="flex items-center gap-2 bg-card border-b px-4 py-3">
         <Icon className="size-4 text-muted-foreground" strokeWidth={1.8} />
-        <h2 className="text-sm font-medium">{title}</h2>
+        <h2 className="text-sm font-semibold">{title}</h2>
       </div>
-      <div className="divide-y">{children}</div>
+      <div className="divide-y bg-card">{children}</div>
     </div>
   );
 }

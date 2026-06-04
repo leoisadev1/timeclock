@@ -193,7 +193,7 @@ function mapConvexLocation(loc: ConvexLocation): Location {
   };
 }
 
-function mapEmployee(row: ConvexEmployees[number], locationId: LocationId): Employee {
+function mapEmployee(row: ConvexEmployees[number], _locationId: LocationId): Employee {
   return {
     id: row.id,
     name: row.displayName,
@@ -566,7 +566,7 @@ function RouteComponent() {
                         existingShiftIds,
                       ),
                     });
-                    toast.success(existingShiftIds.has(shift.id) ? "Shift updated" : "Shift created");
+                    toast.success(existingShiftIds.has(shift.id as Id<"shifts">) ? "Shift updated" : "Shift created");
                   } catch (error) {
                     toast.error(error instanceof Error ? error.message : "Shift save failed");
                     throw error;
