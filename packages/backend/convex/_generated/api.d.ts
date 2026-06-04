@@ -8,8 +8,18 @@
  * @module
  */
 
+import type * as demo from "../demo.js";
+import type * as employees from "../employees.js";
 import type * as healthCheck from "../healthCheck.js";
+import type * as locations from "../locations.js";
 import type * as privateData from "../privateData.js";
+import type * as reports from "../reports.js";
+import type * as schedules from "../schedules.js";
+import type * as seed from "../seed.js";
+import type * as seedData from "../seedData.js";
+import type * as shared from "../shared.js";
+import type * as timecards from "../timecards.js";
+import type * as today from "../today.js";
 
 import type {
   ApiFromModules,
@@ -18,8 +28,18 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  demo: typeof demo;
+  employees: typeof employees;
   healthCheck: typeof healthCheck;
+  locations: typeof locations;
   privateData: typeof privateData;
+  reports: typeof reports;
+  schedules: typeof schedules;
+  seed: typeof seed;
+  seedData: typeof seedData;
+  shared: typeof shared;
+  timecards: typeof timecards;
+  today: typeof today;
 }>;
 
 /**
