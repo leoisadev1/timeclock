@@ -1,15 +1,5 @@
-export type LocationId = "loc-downtown" | "loc-riverside";
-export type EmployeeId =
-  | "emp-maya"
-  | "emp-omar"
-  | "emp-jules"
-  | "emp-lena"
-  | "emp-noah"
-  | "emp-priya"
-  | "emp-cam"
-  | "emp-ivy"
-  | "emp-sam"
-  | "emp-eli";
+export type LocationId = string;
+export type EmployeeId = string;
 
 export type Position = "Manager" | "Shift Lead" | "Barista" | "Cashier" | "Cook" | "Server";
 export type AppRole = "admin" | "manager" | "employee";
@@ -47,6 +37,7 @@ export interface Shift {
   id: string;
   locationId: LocationId;
   employeeId?: EmployeeId;
+  positionId?: string;
   day: string;
   start: string;
   end: string;

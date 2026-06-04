@@ -50,11 +50,26 @@ const POSITION_COLORS: Record<Position, { block: string; dot: string }> = {
 
 interface ScheduleBuilderProps {
   schedule: ScheduleWeek;
+  employees?: Employee[];
+  positions?: Array<{ id: string; name: Position }>;
   onScheduleChange: (schedule: ScheduleWeek) => void;
+  onSaveShift?: (shift: Shift) => Promise<void>;
+  onDuplicateShift?: (shift: Shift) => Promise<void>;
+  onDeleteShift?: (shiftId: string) => Promise<void>;
+  onPublishSchedule?: () => Promise<void>;
 }
 
-export function ScheduleBuilder({ schedule, onScheduleChange }: ScheduleBuilderProps) {
-  const employees = getEmployees(schedule.locationId).filter((e) => e.active);
+export function ScheduleBuilder({
+  schedule,
+  employees: providedEmployees,
+  positions,
+  onScheduleChange,
+  onSaveShift,
+  onDuplicateShift,
+  onDeleteShift,
+  onPublishSchedule,
+}: ScheduleBuilderProps) {
+  const employees = (providedEmployees ?? getEmployees(schedule.locationId)).filter((e) => e.active);
   const [selectedDay, setSelectedDay] = useState("Mon");
   const [editingShift, setEditingShift] = useState<Shift | undefined>();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -64,8 +79,14 @@ export function ScheduleBuilder({ schedule, onScheduleChange }: ScheduleBuilderP
   const coverage = useMemo(() => buildCoverage(schedule.shifts), [schedule.shifts]);
   const openShifts = schedule.shifts.filter((s) => !s.employeeId);
 
-  function saveShift(shift: Shift) {
+  async function saveShift(shift: Shift) {
     const normalized = { ...shift, locationId: schedule.locationId };
+    if (onSaveShift) {
+      await onSaveShift(normalized);
+      setDialogOpen(false);
+      setEditingShift(undefined);
+      return;
+    }
     const exists = schedule.shifts.some((s) => s.id === normalized.id);
     const shifts = exists
       ? schedule.shifts.map((s) => (s.id === normalized.id ? normalized : s))
@@ -76,7 +97,11 @@ export function ScheduleBuilder({ schedule, onScheduleChange }: ScheduleBuilderP
     toast.success(exists ? "Shift updated" : "Shift created");
   }
 
-  function duplicateShift(shift: Shift) {
+  async function duplicateShift(shift: Shift) {
+    if (onDuplicateShift) {
+      await onDuplicateShift(shift);
+      return;
+    }
     const copy: Shift = { ...shift, id: `${shift.id}-copy-${Date.now()}` };
     onScheduleChange({
       ...schedule,
@@ -86,7 +111,11 @@ export function ScheduleBuilder({ schedule, onScheduleChange }: ScheduleBuilderP
     toast.success("Shift duplicated");
   }
 
-  function deleteShift(shiftId: string) {
+  async function deleteShift(shiftId: string) {
+    if (onDeleteShift) {
+      await onDeleteShift(shiftId);
+      return;
+    }
     onScheduleChange({
       ...schedule,
       shifts: schedule.shifts.filter((s) => s.id !== shiftId),
@@ -122,7 +151,11 @@ export function ScheduleBuilder({ schedule, onScheduleChange }: ScheduleBuilderP
           </Button>
           <Button
             variant={schedule.published ? "outline" : "default"}
-            onClick={() => {
+            onClick={async () => {
+              if (onPublishSchedule) {
+                await onPublishSchedule();
+                return;
+              }
               onScheduleChange({
                 ...schedule,
                 published: !schedule.published,
@@ -329,6 +362,7 @@ export function ScheduleBuilder({ schedule, onScheduleChange }: ScheduleBuilderP
         open={dialogOpen}
         shift={editingShift}
         employees={employees}
+        positions={positions}
         onClose={() => { setDialogOpen(false); setEditingShift(undefined); }}
         onSave={saveShift}
       />

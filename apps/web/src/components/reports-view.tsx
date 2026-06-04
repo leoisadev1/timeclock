@@ -4,9 +4,20 @@ import { Badge } from "@timeclock/ui/components/badge";
 import { Button } from "@timeclock/ui/components/button";
 import { useState } from "react";
 
-export function ReportsView({ locationId }: { locationId: LocationId }) {
+export function ReportsView({
+  locationId,
+  dailyRows,
+  weeklyRows,
+}: {
+  locationId: LocationId;
+  dailyRows?: ReportRow[];
+  weeklyRows?: ReportRow[];
+}) {
   const [view, setView] = useState<"daily" | "weekly">("daily");
-  const rows = view === "daily" ? getDailyReport(locationId) : getWeeklyReport(locationId);
+  const rows =
+    view === "daily"
+      ? (dailyRows ?? getDailyReport(locationId))
+      : (weeklyRows ?? getWeeklyReport(locationId));
 
   return (
     <div className="grid gap-4">

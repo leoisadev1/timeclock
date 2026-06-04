@@ -9,9 +9,26 @@ function isOpenToday(hours: string): boolean {
   return hours.toLowerCase() !== "closed";
 }
 
-export function SettingsView({ locationId }: { locationId: LocationId }) {
+type SettingsLocation = ReturnType<typeof getLocations>[number];
+
+export function SettingsView({
+  locationId,
+  location: providedLocation,
+  onSave,
+}: {
+  locationId: LocationId;
+  location?: SettingsLocation;
+  onSave?: (settings: {
+    name: string;
+    address: string;
+    timezone: string;
+    weekStartDay: number;
+    lateGraceMinutes: number;
+    noShowThresholdMinutes: number;
+  }) => Promise<void>;
+}) {
   const location =
-    getLocations().find((candidate) => candidate.id === locationId) ?? getLocations()[0];
+    providedLocation ?? getLocations().find((candidate) => candidate.id === locationId) ?? getLocations()[0];
 
   return (
     <div className="grid gap-4">
@@ -32,35 +49,47 @@ export function SettingsView({ locationId }: { locationId: LocationId }) {
           </div>
           <form
             className="grid gap-4 border p-4"
-            onSubmit={(event) => {
+            onSubmit={async (event) => {
               event.preventDefault();
+              const form = new FormData(event.currentTarget);
+              if (onSave) {
+                await onSave({
+                  name: String(form.get("name") ?? location.name),
+                  address: String(form.get("address") ?? location.address),
+                  timezone: String(form.get("timezone") ?? location.timezone),
+                  weekStartDay: String(form.get("weekStart") ?? location.weekStart) === "Monday" ? 1 : 0,
+                  lateGraceMinutes: Number(form.get("lateGraceMinutes") ?? location.graceMinutes),
+                  noShowThresholdMinutes: Number(form.get("noShowThresholdMinutes") ?? location.noShowMinutes),
+                });
+                return;
+              }
               toast.success("Settings saved locally for the demo");
             }}
           >
             <div className="grid gap-3 md:grid-cols-2">
               <label className="grid gap-1">
                 <Label>Location name</Label>
-                <Input defaultValue={location.name} />
+                <Input name="name" defaultValue={location.name} />
               </label>
               <label className="grid gap-1">
                 <Label>Timezone</Label>
-                <Input defaultValue={location.timezone} />
+                <Input name="timezone" defaultValue={location.timezone} />
               </label>
               <label className="grid gap-1">
                 <Label>Address</Label>
-                <Input defaultValue={location.address} />
+                <Input name="address" defaultValue={location.address} />
               </label>
               <label className="grid gap-1">
                 <Label>Week start</Label>
-                <Input defaultValue={location.weekStart} />
+                <Input name="weekStart" defaultValue={location.weekStart} />
               </label>
               <label className="grid gap-1">
                 <Label>Late grace minutes</Label>
-                <Input type="number" defaultValue={location.graceMinutes} />
+                <Input name="lateGraceMinutes" type="number" defaultValue={location.graceMinutes} />
               </label>
               <label className="grid gap-1">
                 <Label>No-show threshold minutes</Label>
-                <Input type="number" defaultValue={location.noShowMinutes} />
+                <Input name="noShowThresholdMinutes" type="number" defaultValue={location.noShowMinutes} />
               </label>
             </div>
             <div className="flex justify-end">

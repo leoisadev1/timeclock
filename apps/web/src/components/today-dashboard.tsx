@@ -3,7 +3,7 @@ import {
   getEmployees,
   warningLabel,
 } from "@/lib/timeclock-adapter";
-import type { TodayDashboard as TodayDashboardData, Timecard } from "@/lib/timeclock-types";
+import type { Employee, TodayDashboard as TodayDashboardData, Timecard } from "@/lib/timeclock-types";
 import { Badge } from "@timeclock/ui/components/badge";
 import { Button } from "@timeclock/ui/components/button";
 import {
@@ -19,13 +19,18 @@ import type { ReactNode } from "react";
 
 interface TodayDashboardProps {
   data: TodayDashboardData;
+  employees?: Employee[];
   onNavigate: (view: "schedule" | "reports") => void;
 }
 
-export function TodayDashboard({ data, onNavigate }: TodayDashboardProps) {
-  const todaysShifts = data.schedule.shifts.filter((shift) => shift.day === "Thu");
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export function TodayDashboard({ data, employees: providedEmployees, onNavigate }: TodayDashboardProps) {
+  const todayLabel =
+    DAY_LABELS[new Date(`${data.businessDate}T00:00:00.000Z`).getUTCDay()] ?? "Mon";
+  const todaysShifts = data.schedule.shifts.filter((shift) => shift.day === todayLabel);
   const totalHours = todaysShifts.reduce((sum, shift) => sum + calculateShiftHours(shift), 0);
-  const employees = getEmployees(data.location.id);
+  const employees = providedEmployees ?? getEmployees(data.location.id);
 
   return (
     <div className="grid gap-4">

@@ -11,18 +11,19 @@ import { Textarea } from "@timeclock/ui/components/textarea";
 import { XIcon } from "lucide-react";
 import { useState } from "react";
 
-const positions: Position[] = ["Manager", "Shift Lead", "Barista", "Cashier", "Cook", "Server"];
+const defaultPositions: Position[] = ["Manager", "Shift Lead", "Barista", "Cashier", "Cook", "Server"];
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 interface ShiftDialogProps {
   open: boolean;
   shift?: Shift;
   employees: Employee[];
+  positions?: Array<{ id: string; name: Position }>;
   onClose: () => void;
   onSave: (shift: Shift) => void;
 }
 
-export function ShiftDialog({ open, shift, employees, onClose, onSave }: ShiftDialogProps) {
+export function ShiftDialog({ open, shift, employees, positions: positionOptions, onClose, onSave }: ShiftDialogProps) {
   if (!open) {
     return null;
   }
@@ -31,6 +32,7 @@ export function ShiftDialog({ open, shift, employees, onClose, onSave }: ShiftDi
       key={shift?.id ?? "new"}
       shift={shift}
       employees={employees}
+      positions={positionOptions}
       onClose={onClose}
       onSave={onSave}
     />
@@ -40,9 +42,13 @@ export function ShiftDialog({ open, shift, employees, onClose, onSave }: ShiftDi
 function ShiftDialogForm({
   shift,
   employees,
+  positions,
   onClose,
   onSave,
 }: Omit<ShiftDialogProps, "open">) {
+  const availablePositions = positions?.length
+    ? positions
+    : defaultPositions.map((position) => ({ id: position, name: position }));
   const [draft, setDraft] = useState<Shift>(
     shift ?? {
       id: `shift-${Date.now()}`,
@@ -50,7 +56,8 @@ function ShiftDialogForm({
       day: "Mon",
       start: "9:00 AM",
       end: "5:00 PM",
-      position: "Barista",
+      position: availablePositions[0]?.name ?? "Barista",
+      positionId: availablePositions[0]?.id,
       breakMinutes: 30,
       notes: "",
     },
@@ -126,14 +133,19 @@ function ShiftDialogForm({
             <Label>Position</Label>
             <select
               value={draft.position}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, position: event.target.value as Position }))
-              }
+              onChange={(event) => {
+                const selected = availablePositions.find((position) => position.name === event.target.value);
+                setDraft((current) => ({
+                  ...current,
+                  position: event.target.value as Position,
+                  positionId: selected?.id,
+                }));
+              }}
               className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
             >
-              {positions.map((position) => (
-                <option key={position} value={position}>
-                  {position}
+              {availablePositions.map((position) => (
+                <option key={position.id} value={position.name}>
+                  {position.name}
                 </option>
               ))}
             </select>

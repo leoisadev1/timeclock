@@ -1,5 +1,5 @@
 import { getEmployees } from "@/lib/timeclock-adapter";
-import type { LocationId } from "@/lib/timeclock-types";
+import type { Employee, LocationId } from "@/lib/timeclock-types";
 import { Badge } from "@timeclock/ui/components/badge";
 import { Button } from "@timeclock/ui/components/button";
 import { Input } from "@timeclock/ui/components/input";
@@ -7,8 +7,16 @@ import { Label } from "@timeclock/ui/components/label";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export function EmployeesView({ locationId }: { locationId: LocationId }) {
-  const employees = getEmployees(locationId);
+export function EmployeesView({
+  locationId,
+  employees: providedEmployees,
+  onDeactivate,
+}: {
+  locationId: LocationId;
+  employees?: Employee[];
+  onDeactivate?: (employeeId: string) => Promise<void>;
+}) {
+  const employees = providedEmployees ?? getEmployees(locationId);
   const [showPin, setShowPin] = useState(false);
   const [editing, setEditing] = useState<string | undefined>();
 
@@ -99,11 +107,13 @@ export function EmployeesView({ locationId }: { locationId: LocationId }) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() =>
-                        toast.warning(
-                          `${employee.name} would be deactivated after backend confirmation.`,
-                        )
-                      }
+                      onClick={async () => {
+                        if (onDeactivate) {
+                          await onDeactivate(employee.id);
+                          return;
+                        }
+                        toast.warning(`${employee.name} would be deactivated after backend confirmation.`);
+                      }}
                     >
                       Deactivate
                     </Button>
