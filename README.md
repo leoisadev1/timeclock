@@ -31,9 +31,8 @@ bun run dev:setup
 
 Follow the prompts to create a new Convex project and connect it to your application.
 
-Copy the Convex deployment env values from `packages/backend/.env.local` to your Convex project, and then create app env files from each app's `.env.example`:
-- `apps/web/.env` for the web frontend
-- `apps/mobile/.env` for the Expo app
+Copy the Convex deployment env values from `packages/backend/.env.local` to your Convex project, then create
+`apps/web/.env` from `apps/web/.env.example`.
 
 ### Clerk Authentication Setup
 
@@ -55,12 +54,6 @@ VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 ```
 
-You also need the publishable key for the mobile app in `apps/mobile/.env`:
-
-```bash
-EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-```
-
 6. Push the Convex auth config after setting the issuer:
 
 ```bash
@@ -68,8 +61,6 @@ bun run dev:server
 ```
 
 The JWT template must be named `convex`; that is the token template requested by both the TanStack Start SSR loader and `ConvexProviderWithClerk`.
-
-If you use the same Clerk application for web + mobile, you can reuse the same publishable key and issuer setup.
 
 Then, run the development server:
 
@@ -79,29 +70,6 @@ bun run dev
 
 Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
 Your app will connect to the Convex cloud backend automatically.
-
-### Mobile (Expo + Uniwind)
-
-You now also have `apps/mobile` in this workspace. Start it with:
-
-```bash
-bun run dev:mobile
-```
-
-Set these in `apps/mobile/.env` (copy from `.env.example`):
-
-```bash
-EXPO_PUBLIC_CONVEX_URL=...
-EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=...
-```
-
-For mobile emulators/simulators, `EXPO_PUBLIC_CONVEX_URL` can point at your local Convex instance (the same style as web via `VITE_CONVEX_URL`), but on physical devices use your machine's LAN URL (for example, `http://192.168.x.x:3210`) so the phone can reach the backend.
-
-Then run:
-
-```bash
-bun run dev:mobile
-```
 
 ## UI Customization
 
@@ -138,8 +106,7 @@ If you want to add app-specific blocks instead of shared primitives, run the sha
 ```
 timeclock/
 ├── apps/
-│   ├── web/         # Frontend application (React + TanStack Start)
-│   └── mobile/      # Native mobile app (Expo + Uniwind)
+│   └── web/         # Frontend application (React + TanStack Start)
 ├── packages/
 │   ├── ui/          # Shared shadcn/ui components and styles
 │   ├── backend/     # Convex backend functions and schema
@@ -152,7 +119,6 @@ timeclock/
 - `bun run dev`: Start all applications in development mode
 - `bun run build`: Build all applications
 - `bun run dev:web`: Start only the web application
-- `bun run dev:mobile`: Start only the mobile application
 - `bun run dev:setup`: Setup and configure your Convex project
 - `bun run check-types`: Check TypeScript types across all apps
 - `bun run check`: Run Oxlint and Oxfmt
