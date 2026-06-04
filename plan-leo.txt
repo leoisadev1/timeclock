@@ -1,0 +1,168 @@
+You are Leo's frontend-heavy agent for /Users/leo/projects/timeclock.
+
+Goal: build the polished responsive Timeclock MVP UI from README.md while Anton owns most backend implementation. You may build a small frontend adapter/demo-data layer and light Convex integration, but avoid conflicting with Anton's backend files. No tests for now. Use shadcn theme/components, Tailwind v4, product-ui-director, frontend-skill, design-taste-frontend, and web-animation-design.
+
+First steps:
+1. cd /Users/leo/projects/timeclock
+2. git pull --rebase
+3. Read README.md fully.
+4. Read these skills before implementation:
+   - /Users/leo/.codex/skills/product-ui-director/SKILL.md
+   - /Users/leo/.codex/skills/frontend-skill/SKILL.md
+   - /Users/leo/.agents/skills/design-taste-frontend/SKILL.md
+   - /Users/leo/.codex/skills/web-animation-design/SKILL.md
+5. Inspect apps/web/src/** and packages/ui/src/**.
+6. Check package.json before importing any package. The repo already has lucide-react, shadcn, Tailwind v4, sonner, Base UI, React 19, TanStack Start/Router, Convex, Clerk.
+
+Ownership boundary:
+- Own apps/web/src/**.
+- Own packages/ui/src/** for reusable shadcn-style components, tokens, layout primitives, and motion utilities.
+- Avoid packages/backend/convex/** except for tiny read-only inspection or a clearly isolated frontend contract file if absolutely necessary.
+- If Anton's Convex API is not ready, build against apps/web/src/lib/demo-data.ts and apps/web/src/lib/timeclock-adapter.ts so screens are real and easy to wire later.
+
+Design read:
+- Reading this as an operational scheduling/time-attendance app for managers and hourly employees, with a calm command-center language, leaning toward shadcn/Tailwind, dense useful surfaces, restrained orange/ink accenting, and Linear/Vercel-grade product motion.
+
+Compact UI brief:
+- Surface: one responsive web app with manager workspace, employee PIN portal, and station/kiosk mode.
+- User job: create/publish schedules, clock employees in/out, monitor today's attendance, and inspect scheduled-vs-actual time.
+- Visual posture: calm restaurant operations command.
+- Information architecture: app shell/location selector, Today dashboard, Schedule builder, Employees, Reports, Employee portal, Station route.
+- Composition: split workspace, table/grid schedule, status rails, inspector/modals, kiosk PIN pad. Use cards only for repeated records or contained modals.
+- Interaction: fast tab/route transitions, selected-location continuity, modal enter/exit, schedule cell hover/focus, punch action feedback, PIN keypad states, polling/update pulse.
+- Forbidden patterns: landing-page hero, decorative bento grid, fake SaaS cards everywhere, purple/blue gradient blobs, giant marketing copy, one-note dark slate dashboard, hidden primary workflow below intro content.
+
+Core screens/routes to build:
+- /: useful demo entry with manager login shortcut, employee PIN entry, station entry, and current demo status. Keep it product/workflow-first, not a marketing landing page.
+- /dashboard or /_auth/dashboard: manager shell with location selector and tabs/nav for Today, Schedule, Employees, Reports, Settings.
+- /employee: PIN-based employee web view with schedule, current status, punch actions, today's events, recent history.
+- /station: kiosk mode with manager unlock placeholder, location select, large PIN pad, employee confirmation/status, punch actions, exit confirmation.
+
+Manager UI requirements:
+- Today dashboard:
+  - selected location and business date
+  - published schedule summary
+  - scheduled not clocked in
+  - clocked in
+  - on break
+  - clocked out
+  - unscheduled clock-ins
+  - late/no-show indicators
+  - recent punch activity
+  - quick links
+  - visual polling/update pulse but no noisy animation
+- Schedule builder:
+  - weekly grid, employees plus Open Shifts row, days as columns
+  - shift blocks with time, position, notes/overnight indicator
+  - create/edit modal
+  - duplicate/delete affordances
+  - publish button and published/draft state
+  - labor hour totals by employee/day/week
+  - position coverage and warning rail
+  - warnings for overlap, outside hours, high weekly hours, open shifts
+  - no drag-and-drop for MVP
+- Employees:
+  - employee table/list scoped to location
+  - role, position, active status, PIN visibility treatment, assigned locations
+  - create/edit/deactivate modal if time allows
+- Reports:
+  - daily timesheet detail
+  - weekly summary by employee
+  - scheduled hours, actual hours, variance, break time, edited flag, attendance indicators
+  - no CSV export for MVP
+- Settings:
+  - location name/address/timezone/week start/grace/no-show/operating hours
+  - simple MVP form, not overbuilt
+
+Employee UI requirements:
+- PIN login flow with company-unique 4-digit PIN.
+- Published assigned shifts only.
+- Published open shifts read-only.
+- Current status: clocked out, clocked in, on break.
+- Actions: clock in, start break, end break, clock out.
+- Today's timecard events and recent history.
+- Clear error states for inactive employee, wrong PIN, no location assignment, already-open timecard.
+
+Station UI requirements:
+- Kiosk-style full screen, no normal navigation.
+- Manager/admin unlock placeholder can use existing auth state or demo control while Anton finishes backend.
+- Location select.
+- Large accessible PIN pad with stable dimensions.
+- Employee name/avatar/status after PIN.
+- Big punch actions.
+- Exit station mode requires confirmation.
+- Touch targets at least 44px, preferably larger.
+
+Implementation guidance:
+- Use shadcn-style components from packages/ui first: Button, Card only when appropriate, Checkbox, DropdownMenu, Input, Label, Skeleton, Sonner.
+- Add missing shared components only when needed, for example badge, tabs, dialog, table, select, separator, textarea, avatar, tooltip, segmented control. Keep them in packages/ui/src/components.
+- Use lucide-react icons because the repo already depends on it; keep stroke width consistent.
+- Build a real app shell, not a landing page.
+- Keep tables/grids readable on desktop and practical on mobile. On mobile, switch schedule grid to day tabs or a vertical agenda instead of horizontal squeeze.
+- Use semantic status colors sparingly: green working, amber warning, red late/no-show, blue/neutral info, primary orange action.
+- Keep type compact. No viewport-scaled fonts. No giant dashboard headings.
+- Avoid React useEffect for derived state. Use render-time derivation, event handlers, TanStack/Convex hooks, or adapter functions.
+- Do not add a new animation library unless already present or clearly justified. Prefer CSS transitions and tw-animate-css/shadcn motion primitives.
+
+Motion system:
+- Motion intensity: 3-4 for manager workflow, 4-5 for station/employee feedback.
+- Use explicit transition properties, not transition-all.
+- Button press: 70-120ms transform/opacity.
+- Hover/focus/selected states: 120-180ms.
+- Modals/drawers/popovers: 180-260ms, opacity + 4-12px translate from the trigger/edge.
+- Schedule/status updates: subtle pulse or highlight once, then settle.
+- Respect prefers-reduced-motion.
+- No looping decorative motion near readable operational content.
+
+Backend coordination:
+- Prefer reading from Anton's Convex functions when they exist.
+- Until then, create:
+  - apps/web/src/lib/demo-data.ts
+  - apps/web/src/lib/timeclock-types.ts
+  - apps/web/src/lib/timeclock-adapter.ts
+- The adapter should expose the same shapes Leo's UI needs:
+  - getLocations()
+  - getTodayDashboard(locationId)
+  - getScheduleWeek(locationId, weekStartDate)
+  - getEmployees(locationId)
+  - getDailyReport(locationId, businessDate)
+  - getWeeklyReport(locationId, weekStartDate)
+  - getEmployeePortal(pin/locationId)
+  - clock action stubs that update local UI state or show pending backend toast
+- Keep this adapter narrow so replacing demo data with Convex queries/mutations is straightforward.
+
+Recommended file plan:
+- apps/web/src/routes/index.tsx
+- apps/web/src/routes/_auth/dashboard.tsx
+- apps/web/src/routes/employee.tsx
+- apps/web/src/routes/station.tsx
+- apps/web/src/components/app-shell.tsx
+- apps/web/src/components/location-switcher.tsx
+- apps/web/src/components/today-dashboard.tsx
+- apps/web/src/components/schedule-builder.tsx
+- apps/web/src/components/shift-dialog.tsx
+- apps/web/src/components/employee-portal.tsx
+- apps/web/src/components/station-kiosk.tsx
+- apps/web/src/components/reports-view.tsx
+- apps/web/src/components/settings-view.tsx
+- apps/web/src/lib/timeclock-types.ts
+- apps/web/src/lib/demo-data.ts
+- apps/web/src/lib/timeclock-adapter.ts
+- packages/ui/src/components/* for reusable primitives only
+- packages/ui/src/styles/globals.css for theme/token tuning
+
+Validation:
+- No tests for now.
+- Do not start dev servers unless explicitly asked.
+- Run bun run check-types if practical.
+- Run bun --filter web build if env allows.
+- Because browser validation is not explicitly allowed, do a code-level visual review against product-ui-director and web-animation-design. If the user later permits browser/UI validation, capture desktop and mobile screenshots with agent-browser.
+
+Definition of done:
+- The app opens into a useful Timeclock demo flow.
+- Manager, employee, and station areas are navigable and coherent.
+- Schedule builder and Today dashboard are the strongest demo surfaces.
+- UI uses the existing shadcn theme and shared UI package.
+- Motion is restrained, purposeful, accessible, and not decorative.
+- Backend integration is isolated behind adapter shapes so Anton can wire Convex without UI rewrites.
+- No tests added.

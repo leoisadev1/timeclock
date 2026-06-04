@@ -1,0 +1,138 @@
+You are Anton's backend agent for /Users/leo/projects/timeclock.
+
+Goal: build the Convex backend foundation for the Timeclock hackathon MVP from README.md. Do not work on the React UI except for tiny compile fixes caused by backend API names. No tests for now. Validate with typecheck/build commands only if practical.
+
+First steps:
+1. cd /Users/leo/projects/timeclock
+2. git pull --rebase
+3. Read README.md fully before editing.
+4. Read packages/backend/AGENTS.md and packages/backend/convex/README.md.
+5. Inspect packages/backend/convex/schema.ts, privateData.ts, healthCheck.ts, and generated Convex files.
+
+Ownership boundary:
+- Own packages/backend/convex/** except generated files.
+- Own backend data model, seed data, auth/session helpers, schedule/timecard/report functions.
+- Avoid editing apps/web/src/** and packages/ui/** unless the build is broken only because generated API names changed.
+- Coordinate with Leo through stable Convex function names and return shapes. Do not rename functions casually once created.
+
+Product source of truth:
+- README.md is the spec.
+- MVP product areas: Manager, Employee, Location Station.
+- Deferred features stay deferred: native mobile, GPS/geofencing, shift trades, notifications, schedule templates, payroll exports, formal approvals, open-shift claiming, CSV export, overtime/compliance logic.
+
+Backend architecture:
+- Use Convex idioms and typed validators.
+- Keep timestamps as absolute milliseconds.
+- Store business dates as ISO yyyy-mm-dd strings in the location timezone.
+- Use explicit role checks: admin, manager, employee.
+- Use seeded demo data instead of placeholder/fake-random data.
+- Use small helper functions for auth, location access, time math, schedule matching, and attendance classification.
+- Do not weaken types to any.
+
+Recommended file plan:
+- packages/backend/convex/schema.ts
+- packages/backend/convex/seed.ts
+- packages/backend/convex/auth.ts or access.ts
+- packages/backend/convex/locations.ts
+- packages/backend/convex/employees.ts
+- packages/backend/convex/schedules.ts
+- packages/backend/convex/timecards.ts
+- packages/backend/convex/reports.ts
+- packages/backend/convex/demo.ts if a single demo bootstrap/status API is useful
+
+Data model to implement:
+- companies
+- locations
+- locationHours
+- positions
+- employees
+- employeeLocations
+- managerLocations
+- schedules
+- shifts
+- timecards
+- timeEvents
+- timecardEdits
+
+Indexes to include:
+- locations by company
+- employees by company, by pin, by role, by active
+- employeeLocations by employee, by location
+- managerLocations by manager, by location
+- positions by location
+- schedules by location+weekStart
+- shifts by schedule, by employee, by position
+- timecards by employee+open state, by location+businessDate, by shift
+- timeEvents by timecard
+- timecardEdits by timecard
+
+Seed data requirements:
+- One company.
+- Two realistic locations with timezones, week start day, grace/no-show thresholds, operating hours.
+- Admin/manager accounts matching the README demo flow. Include prefilled demo-login data in a query response.
+- 8-12 employees with unique 4-digit PINs, avatar URLs, roles, positions, active flags, assigned locations.
+- Location-scoped positions: Manager, Shift Lead, Cashier, Barista, Cook, Server as appropriate.
+- Current week published schedules.
+- Next week unpublished schedules.
+- Today's and recent timecards/events.
+- A few attendance exceptions: late, no-show candidate, unscheduled clock-in, on break, clocked out.
+
+Core functions to expose:
+- demo.bootstrap or seed.ensureDemoData: idempotently create/update demo data.
+- demo.getDemoLogin: returns manager/admin demo credentials and employee PIN examples.
+- locations.listForCurrentUser
+- locations.getSettings
+- locations.updateSettings
+- employees.listByLocation
+- employees.getByPinForLocation
+- employees.create/update/deactivate if time allows.
+- schedules.getWeek({ locationId, weekStartDate })
+- schedules.upsertShift
+- schedules.deleteShift
+- schedules.duplicateShift
+- schedules.publishWeek
+- schedules.getEmployeePublishedSchedule({ employeeId })
+- timecards.getCurrentStatus({ employeeId, locationId })
+- timecards.clockIn
+- timecards.startBreak
+- timecards.endBreak
+- timecards.clockOut
+- timecards.managerCorrectTimecard
+- today.getDashboard({ locationId, businessDate })
+- reports.dailyTimesheet({ locationId, businessDate })
+- reports.weeklySummary({ locationId, weekStartDate })
+
+Business rules:
+- Employees can only see published schedules.
+- Open shifts are visible after publish but read-only for employees.
+- Publishing is a visibility toggle and records publishedAt/updatedAt.
+- Warnings do not block publishing.
+- One open timecard per employee at a time.
+- Multiple closed timecards per employee per day are allowed.
+- Clock-ins are allowed without a matching shift.
+- Matching rule: same employee, same location, published schedule, shift starts on same business date, clock-in within 2 hours before/after scheduled start, nearest start wins.
+- Attendance status: early >5 min before, on time from 5 min before through 5 min after, late >5 min after, no-show if no clock-in 15 min after scheduled start, unscheduled when no matched shift.
+- Open shifts do not auto-assign on clock-in.
+- Corrections require a note and preserve before/after in timecardEdits.
+- Normal UI should not delete historical timecards or edit records.
+
+Return-shape contract for Leo:
+- Prefer UI-ready read models so Leo does not duplicate business logic in React.
+- Include stable ids, display names, avatarUrl, role, positionName, locationName, timezone, businessDate, status, and computed hour totals.
+- Schedule week query should return days, employee rows, openShift row, shifts, daily totals, weekly totals, coverage summary, warnings, isPublished, publishedAt, updatedAt.
+- Today dashboard query should return scheduledNotClockedIn, clockedIn, onBreak, clockedOut, unscheduledClockIns, noShows, late, recentPunches, and quick counts.
+- Reports should return row arrays plus totals, not only raw timecards.
+
+Validation:
+- Do not write tests for now.
+- Run bun run check-types if the backend generated types are ready.
+- Run bun --filter @timeclock/backend dev only if needed for Convex codegen/setup and stop it after use.
+- Run bun run build only if it is reasonably fast and does not require unavailable secrets.
+- If a command cannot run because Convex/Clerk env is missing, say exactly what was missing and what remains unverified.
+
+Definition of done:
+- Backend schema and functions represent the README MVP.
+- Demo seed can be run idempotently.
+- Leo has stable function names and UI-ready read shapes.
+- No frontend implementation takeover.
+- No tests added.
