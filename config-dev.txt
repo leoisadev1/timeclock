@@ -1,0 +1,125 @@
+timeclock local development config
+==================================
+
+Current local services
+----------------------
+
+- Web app URL:
+  https://timeclock.localhost:1355
+
+- Convex dev deployment:
+  dev:precious-duck-920
+
+- Convex URL:
+  https://precious-duck-920.convex.cloud
+
+- Convex site URL:
+  https://precious-duck-920.convex.site
+
+
+Local env files
+---------------
+
+packages/backend/.env.local should contain:
+
+CONVEX_DEPLOYMENT=dev:precious-duck-920
+CONVEX_URL=https://precious-duck-920.convex.cloud
+CONVEX_SITE_URL=https://precious-duck-920.convex.site
+
+apps/web/.env should contain:
+
+VITE_CONVEX_URL=https://precious-duck-920.convex.cloud
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_bW9kZXJuLWtpdGUtNDguY2xlcmsuYWNjb3VudHMuZGV2JA
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_bW9kZXJuLWtpdGUtNDguY2xlcmsuYWNjb3VudHMuZGV2JA
+CLERK_SECRET_KEY=sk_test_tgRyMWC8dvqce5bEjC9kqCaV9hOR4dhnEvo16xUON6
+
+For this TanStack/Vite app, VITE_CLERK_PUBLISHABLE_KEY is the key the app reads.
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is listed only for teammates who also use
+Next.js tooling or compare against Clerk's default examples.
+
+packages/backend/.env.local can also include this local reference value:
+
+CLERK_JWT_ISSUER_DOMAIN=https://modern-kite-48.clerk.accounts.dev
+
+The source of truth for CLERK_JWT_ISSUER_DOMAIN is Convex's environment
+variables. The local .env.local value is useful as a reminder, but Convex will
+not read it until you run the env set command below.
+
+
+Clerk setup
+-----------
+
+1. Open or create the Clerk application for timeclock:
+   https://dashboard.clerk.com/apps/new
+
+2. Open the Clerk API keys page and copy:
+   - Publishable key into VITE_CLERK_PUBLISHABLE_KEY
+   - Secret key into CLERK_SECRET_KEY
+
+   API keys page:
+   https://dashboard.clerk.com/last-active?path=api-keys
+
+3. Open the Clerk Convex integration page:
+   https://dashboard.clerk.com/apps/setup/convex
+
+4. Activate the Convex integration if it is not active.
+
+5. Copy the Clerk Frontend API URL from the Convex integration page.
+   For this dev app it is:
+
+   https://modern-kite-48.clerk.accounts.dev
+
+6. Set that URL on the Convex dev deployment:
+
+   cd packages/backend
+   bun x convex env set CLERK_JWT_ISSUER_DOMAIN https://modern-kite-48.clerk.accounts.dev
+
+7. Confirm Convex has the value:
+
+   cd packages/backend
+   bun x convex env list
+
+
+Run locally
+-----------
+
+From the repo root:
+
+bun run dev
+
+Open:
+
+https://timeclock.localhost:1355
+
+If portless is running on 443 instead of 1355, use:
+
+https://timeclock.localhost
+
+
+Expected success state
+----------------------
+
+- web#dev starts through portless and prints timeclock.localhost.
+- @timeclock/backend#dev starts convex dev without the CLERK_JWT_ISSUER_DOMAIN error.
+- Clerk sign-in loads in the web app.
+- After signing in, Convex authenticated queries work.
+
+
+Troubleshooting
+---------------
+
+If Convex prints:
+
+Environment variable CLERK_JWT_ISSUER_DOMAIN is used in auth config file but its value was not set.
+
+Then repeat the Clerk setup step that runs:
+
+bun x convex env set CLERK_JWT_ISSUER_DOMAIN <Clerk Frontend API URL>
+
+This value is stored in Convex, not in apps/web/.env.
+
+If the browser does not open the app, run:
+
+portless list
+
+Then use the active timeclock URL shown there.
