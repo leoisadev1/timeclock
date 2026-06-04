@@ -1,0 +1,80 @@
+import { Toaster } from "@timeclock/ui/components/sonner";
+import { ClerkProvider, useAuth } from "@clerk/tanstack-react-start";
+import { auth } from "@clerk/tanstack-react-start/server";
+import type { ConvexQueryClient } from "@convex-dev/react-query";
+import type { QueryClient } from "@tanstack/react-query";
+import {
+  HeadContent,
+  Outlet,
+  Scripts,
+  createRootRouteWithContext,
+  useRouteContext,
+} from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
+import { ConvexProviderWithClerk } from "convex/react-clerk";
+
+import { env } from "@timeclock/env/web";
+import appCss from "../index.css?url";
+
+const fetchClerkAuth = createServerFn({ method: "GET" }).handler(async () => {
+  const clerkAuth = await auth();
+  const token = await clerkAuth.getToken({ template: "convex" });
+  return { userId: clerkAuth.userId, token };
+});
+
+export interface RouterAppContext {
+  queryClient: QueryClient;
+  convexQueryClient: ConvexQueryClient;
+}
+
+export const Route = createRootRouteWithContext<RouterAppContext>()({
+  head: () => ({
+    meta: [
+      {
+        charSet: "utf-8",
+      },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1",
+      },
+      {
+        title: "timeclock",
+      },
+    ],
+    links: [
+      {
+        rel: "stylesheet",
+        href: appCss,
+      },
+    ],
+  }),
+
+  component: RootDocument,
+  beforeLoad: async (ctx) => {
+    const { userId, token } = await fetchClerkAuth();
+    if (token) {
+      ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
+    }
+    return { userId, token };
+  },
+});
+
+function RootDocument() {
+  const context = useRouteContext({ from: Route.id });
+  return (
+    <ClerkProvider publishableKey={env.VITE_CLERK_PUBLISHABLE_KEY}>
+      <ConvexProviderWithClerk client={context.convexQueryClient.convexClient} useAuth={useAuth}>
+        <html lang="en">
+          <head>
+            <HeadContent />
+          </head>
+          <body>
+            <Outlet />
+            <Toaster richColors />
+            <Scripts />
+          </body>
+        </html>
+      </ConvexProviderWithClerk>
+    </ClerkProvider>
+  );
+}
