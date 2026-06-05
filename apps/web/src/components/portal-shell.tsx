@@ -6,22 +6,23 @@ import {
   ChevronRightIcon,
   HomeIcon,
   MonitorIcon,
+  RadioIcon,
   UserRoundIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-export type PortalMode = "home" | "employee" | "station";
+export type PortalMode = "home" | "activity" | "employee" | "station";
 
 const PORTAL_NAV: Array<{
   id: PortalMode | "manager";
   label: string;
-  to: "/" | "/dashboard" | "/employee" | "/station";
+  to: "/" | "/activity" | "/dashboard" | "/employee" | "/station";
   icon: typeof HomeIcon;
 }> = [
+  { id: "activity", label: "Activity", to: "/activity", icon: RadioIcon },
   { id: "manager", label: "Manager", to: "/dashboard", icon: Building2Icon },
   { id: "employee", label: "Employee clock-in", to: "/employee", icon: UserRoundIcon },
   { id: "station", label: "Clock-in station", to: "/station", icon: MonitorIcon },
-  { id: "home", label: "Demo home", to: "/", icon: HomeIcon },
 ];
 
 function navItemActive(id: PortalMode | "manager", mode: PortalMode): boolean {
@@ -49,7 +50,9 @@ export function PortalShell({
   const mobileTitle =
     title ??
     (mode === "home"
-      ? "Demo home"
+      ? "Activity"
+      : mode === "activity"
+        ? "Activity"
       : mode === "employee"
         ? "Employee clock-in"
         : "Clock-in station");

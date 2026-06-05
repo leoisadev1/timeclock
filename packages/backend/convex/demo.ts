@@ -4,8 +4,10 @@ import type { Doc } from "./_generated/dataModel";
 import { ensureDemoData, resetDemoData } from "./seedData";
 import type { MutationCtx } from "./_generated/server";
 import {
+  assertAllowedDemoEmail,
   getCurrentEmployee,
   getDemoCompany,
+  isDemoEmailAllowed,
   isEmployeeAssignedToLocation,
   requireDemoCompany,
   type ReaderCtx,
@@ -48,6 +50,10 @@ async function findSeededManagerForIdentity(
   companyId: Doc<"companies">["_id"],
   email?: string,
 ): Promise<Doc<"employees"> | null> {
+  if (email && !isDemoEmailAllowed(email)) {
+    return null;
+  }
+
   if (email) {
     const byEmail = await findManagerByEmail(ctx, email);
     if (byEmail?.active && ["admin", "manager"].includes(byEmail.role)) {
@@ -98,6 +104,7 @@ export const resetAndSeedForCurrentUser = mutation({
         message: "Sign in with Clerk before seeding your manager workspace.",
       });
     }
+    assertAllowedDemoEmail(identity.email);
 
     const seeded = await resetDemoData(ctx);
     const manager = await findSeededManagerForIdentity(ctx, seeded.companyId, identity.email);
@@ -177,6 +184,7 @@ export const ensureManagerAccess = mutation({
         message: "Sign in with Clerk before connecting manager access.",
       });
     }
+    assertAllowedDemoEmail(identity.email);
 
     const company = await getDemoCompany(ctx);
     if (!company) {
@@ -250,6 +258,7 @@ export const linkCurrentManager = mutation({
         message: "Sign in with an email address before linking manager access.",
       });
     }
+    assertAllowedDemoEmail(identity.email);
 
     await requireDemoCompany(ctx);
 
@@ -278,6 +287,13 @@ export const claimDemoManager = mutation({
       throw new ConvexError({
         code: "NOT_AUTHENTICATED",
         message: "Sign in before claiming demo access.",
+      });
+    }
+    assertAllowedDemoEmail(identity.email);
+    if (!isDemoEmailAllowed(args.email)) {
+      throw new ConvexError({
+        code: "INVALID_DEMO_LOGIN",
+        message: "Sign in email does not match this demo email whitelist.",
       });
     }
 

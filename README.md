@@ -8,6 +8,27 @@ It combines schedule building, employee PIN clock-in, shared station mode, live 
 
 Public URL: add final deployed URL here before submission.
 
+### Demo-only production setup (Vercel fast path)
+
+1. Set demo email in both backend and frontend env:
+
+- Backend: `DEMO_ALLOWED_EMAIL=demo-user@example.com`
+- Frontend: `VITE_DEMO_ALLOWED_EMAIL=demo-user@example.com`
+
+2. Keep normal Convex auth keys as is, and ensure `VITE_CONVEX_URL` points to the deployed
+Convex backend.
+
+3. Seed (or reseed) demo data in Convex after deployment:
+
+- `bun x convex run seed.ensureDemoData` (from `packages/backend`, with your deployed Convex env selected)
+
+4. Deploy frontend on Vercel:
+
+- Set Vercel **Root Directory** to `apps/web`.
+- Add `VITE_CONVEX_URL`, `VITE_CLERK_PUBLISHABLE_KEY`, and `VITE_DEMO_ALLOWED_EMAIL`.
+- Build command: `bun run build`.
+- Output directory: `dist`.
+
 Fast demo path:
 
 1. Open the manager dashboard.

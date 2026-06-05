@@ -11,6 +11,7 @@ import {
 } from "./shared";
 
 const now = () => Date.now();
+const demoAdminEmail = process.env.DEMO_ALLOWED_EMAIL?.trim().toLowerCase() || "admin@timeclock.demo";
 
 type LocationSeed = {
   key: string;
@@ -97,7 +98,7 @@ const employees: EmployeeSeed[] = [
   {
     firstName: "Avery",
     lastName: "Morgan",
-    email: "admin@timeclock.demo",
+    email: demoAdminEmail,
     demoPassword: "demo-admin",
     pin: "1001",
     avatarUrl: "https://api.dicebear.com/9.x/adventurer/svg?seed=Avery",

@@ -5,6 +5,7 @@ import { EmployeesView } from "@/components/employees-view";
 import { ReportsView } from "@/components/reports-view";
 import { ScheduleBuilder } from "@/components/schedule-builder";
 import { SettingsView } from "@/components/settings-view";
+import { StationActivityBoard, useLiveNow, useStationActivity } from "@/components/station-activity";
 import type {
   Employee,
   Location,
@@ -293,6 +294,7 @@ function RouteComponent() {
     shallow: true,
   });
   const updateSearch = setDashboardSearch;
+  const now = useLiveNow(1000);
   const auth = useAuth();
   const todayDateString = new Date().toLocaleDateString("en-CA");
   const isSignedIn = auth.isSignedIn === true;
@@ -334,6 +336,10 @@ function RouteComponent() {
   const effectiveLocationId = activeLocation?.id ?? "";
   const activeConvexLocation = hasConvexLocations ? convexLocations[safeIndex] : undefined;
   const convexLocationId = activeConvexLocation?.id ?? null;
+  const { activity, isLoading: isActivityLoading } = useStationActivity(
+    effectiveLocationId,
+    Boolean(convexLocationId),
+  );
 
   useEffect(() => {
     scheduleWeekCacheRef.current = null;
@@ -630,6 +636,15 @@ function RouteComponent() {
           : undefined
       }
     >
+      {activeView === "activity" && (
+        <div className="-m-4 min-h-[calc(100svh-7rem)] overflow-hidden sm:-m-5">
+          <StationActivityBoard
+            activity={activity ?? null}
+            isLoading={isActivityLoading}
+            now={now}
+          />
+        </div>
+      )}
       {activeView === "schedule" &&
         (schedule && viewingWeek ? (
           <ScheduleBuilder

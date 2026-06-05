@@ -75,7 +75,10 @@ export function SamplePinHints({
     if (!enabled || !demoLogin?.employeePins?.length) {
       return [];
     }
-    return demoLogin.employeePins.slice(0, limit).map((employee) => ({
+    return demoLogin.employeePins
+      .filter((employee) => !["Alex Taylor", "Sam Rivera"].includes(employee.name))
+      .slice(0, limit)
+      .map((employee) => ({
       id: employee.employeeId,
       name: employee.name,
       pin: employee.pin,

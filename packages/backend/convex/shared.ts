@@ -2,6 +2,7 @@ import { ConvexError } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 
+const DEMO_ALLOWED_EMAIL = process.env.DEMO_ALLOWED_EMAIL?.trim().toLowerCase() ?? "";
 export const DEMO_COMPANY_SLUG = "coastal-cafe-group";
 export const MINUTE_MS = 60 * 1000;
 export const HOUR_MS = 60 * MINUTE_MS;
@@ -17,6 +18,26 @@ export function error(
   message: string,
 ): ConvexError<{ code: string; message: string }> {
   return new ConvexError({ code, message });
+}
+
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+export function isDemoEmailAllowed(email?: string): boolean {
+  if (!DEMO_ALLOWED_EMAIL) {
+    return true;
+  }
+  return !!email && normalizeEmail(email) === DEMO_ALLOWED_EMAIL;
+}
+
+export function assertAllowedDemoEmail(email?: string): void {
+  if (!isDemoEmailAllowed(email)) {
+    throw error(
+      "DEMO_ACCOUNT_NOT_AUTHORIZED",
+      "This demo deployment is locked to a single authorized email address.",
+    );
+  }
 }
 
 export async function getDemoCompany(ctx: ReaderCtx): Promise<Doc<"companies"> | null> {
@@ -37,6 +58,9 @@ export async function requireDemoCompany(ctx: ReaderCtx): Promise<Doc<"companies
 export async function getCurrentEmployee(ctx: ReaderCtx): Promise<Doc<"employees"> | null> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
+    return null;
+  }
+  if (!isDemoEmailAllowed(identity.email)) {
     return null;
   }
 

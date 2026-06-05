@@ -8,15 +8,17 @@ import {
   BarChart3Icon,
   CalendarDaysIcon,
   MonitorIcon,
+  RadioIcon,
   Settings2Icon,
   UserRoundIcon,
   UsersIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-export type ManagerView = "schedule" | "employees" | "reports" | "settings";
+export type ManagerView = "activity" | "schedule" | "employees" | "reports" | "settings";
 
 const NAV: Array<{ id: ManagerView; label: string; icon: typeof CalendarDaysIcon }> = [
+  { id: "activity", label: "Activity", icon: RadioIcon },
   { id: "schedule", label: "Schedule", icon: CalendarDaysIcon },
   { id: "employees", label: "Employees", icon: UsersIcon },
   { id: "reports", label: "Reports", icon: BarChart3Icon },

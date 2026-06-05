@@ -1,9 +1,15 @@
+import { EmployeeAvatar } from "@/components/employee-avatar";
 import { LocationSwitcher } from "@/components/location-switcher";
 import { PortalShell } from "@/components/portal-shell";
 import { SamplePinHints } from "@/components/sample-pin-hints";
+import {
+  eventLabel,
+  formatElapsed,
+  markStationActivitySession,
+  useLiveNow,
+} from "@/components/station-activity";
 import { usePortalLocations } from "@/hooks/use-portal-locations";
 import {
-  describeClockAction,
   getEmployeePortal,
   getNextStatus,
 } from "@/lib/timeclock-adapter";
@@ -14,7 +20,6 @@ import { Badge } from "@timeclock/ui/components/badge";
 import { Button } from "@timeclock/ui/components/button";
 import { Skeleton } from "@timeclock/ui/components/skeleton";
 import { useMutation, useQuery } from "convex/react";
-import { LockKeyholeIcon, ShieldCheckIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -171,6 +176,8 @@ function ConvexEmployeePanel({
   avatarUrl,
   positionName,
   locationId,
+  now,
+  sessionStartedAt,
   onPunchComplete,
 }: {
   employeeId: Id<"employees">;
@@ -178,6 +185,8 @@ function ConvexEmployeePanel({
   avatarUrl?: string | null;
   positionName: string | null;
   locationId: Id<"locations">;
+  now: number;
+  sessionStartedAt: number;
   onPunchComplete: () => void;
 }) {
   const clockInMutation = useMutation(api.timecards.clockIn);
@@ -193,6 +202,9 @@ function ConvexEmployeePanel({
   const status: TimecardStatus = currentStatus
     ? convexStatusToLocal(currentStatus.status)
     : "clocked-out";
+  const activeStartedAt = status === "clocked-out" ? undefined : sessionStartedAt;
+  const events =
+    currentStatus?.openTimecard?.events.filter((event) => event.occurredAt >= sessionStartedAt - 1000) ?? [];
 
   const initials = displayName
     .split(" ")
@@ -205,6 +217,7 @@ function ConvexEmployeePanel({
     try {
       if (action === "clock-in") {
         await clockInMutation({ employeeId, locationId, source: "station" });
+        markStationActivitySession(locationId, Date.now());
       } else if (action === "start-break") {
         await startBreakMutation({ employeeId, source: "station" });
       } else if (action === "end-break") {
@@ -213,7 +226,9 @@ function ConvexEmployeePanel({
         await clockOutMutation({ employeeId, source: "station" });
       }
       toast.success(`${action.replace("-", " ")} saved for ${displayName}`);
-      onPunchComplete();
+      if (action === "clock-out") {
+        onPunchComplete();
+      }
     } catch {
       toast.error("Action failed. Please try again.");
     }
@@ -223,17 +238,14 @@ function ConvexEmployeePanel({
     <div className="grid animate-in fade-in-0 slide-in-from-bottom-2 gap-4 duration-200 content-start">
       <div className="rounded-xl bg-muted/20 p-4 ring-1 ring-border md:p-5">
         <div className="flex items-center gap-4">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={displayName}
-              className="size-14 rounded-full object-cover md:size-16"
-            />
-          ) : (
-            <span className="grid size-14 place-items-center rounded-full bg-primary/10 text-lg font-semibold text-primary md:size-16 md:text-xl">
-              {initials}
-            </span>
-          )}
+          <EmployeeAvatar
+            name={displayName}
+            initials={initials}
+            avatarColor="bg-primary"
+            avatarUrl={avatarUrl}
+            employeeId={employeeId}
+            size="xl"
+          />
           <div>
             <h2 className="text-xl font-semibold md:text-2xl">{displayName}</h2>
             <p className="text-sm text-muted-foreground">{positionName ?? "Employee"}</p>
@@ -245,6 +257,46 @@ function ConvexEmployeePanel({
               <Skeleton className="mt-2 h-4 w-24" />
             )}
           </div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 rounded-xl bg-muted/20 p-4 ring-1 ring-border md:p-5">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Session timer
+            </p>
+            <p className="mt-1 font-mono text-4xl font-semibold tabular-nums tracking-tight">
+              {activeStartedAt
+                ? formatElapsed(now - activeStartedAt, currentStatus?.openTimecard?.totalBreakMinutes ?? 0)
+                : "0:00"}
+            </p>
+          </div>
+          <Badge tone={status === "on-break" ? "warning" : status === "clocked-in" ? "success" : "neutral"}>
+            {status.replace("-", " ")}
+          </Badge>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Today events
+          </p>
+          {events.length > 0 ? (
+            <div className="space-y-1">
+              {events.slice().reverse().map((event) => (
+                <div key={event.id} className="flex items-center justify-between gap-3 rounded-lg bg-card px-3 py-2 text-xs ring-1 ring-border">
+                  <span>{eventLabel(event.type)}</span>
+                  <span className="font-mono text-muted-foreground">
+                    {new Date(event.occurredAt).toLocaleTimeString("en-US", {
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No events yet.</p>
+          )}
         </div>
       </div>
 
@@ -266,6 +318,8 @@ function DemoEmployeePanel({
   avatarColor,
   position,
   status,
+  now,
+  startedAt,
   onPunch,
 }: {
   displayName: string;
@@ -273,23 +327,56 @@ function DemoEmployeePanel({
   avatarColor: string;
   position: string;
   status: TimecardStatus;
+  now: number;
+  startedAt: number;
   onPunch: (action: PunchAction) => void;
 }) {
   return (
     <div className="grid animate-in fade-in-0 slide-in-from-bottom-2 gap-4 duration-200 content-start">
       <div className="rounded-xl bg-muted/20 p-4 ring-1 ring-border md:p-5">
         <div className="flex items-center gap-4">
-          <span
-            className={`grid size-14 place-items-center rounded-full md:size-16 ${avatarColor} text-lg font-semibold text-white md:text-xl`}
-          >
-            {initials}
-          </span>
+          <EmployeeAvatar
+            name={displayName}
+            initials={initials}
+            avatarColor={avatarColor}
+            employeeId={displayName}
+            size="xl"
+          />
           <div>
             <h2 className="text-xl font-semibold md:text-2xl">{displayName}</h2>
             <p className="text-sm text-muted-foreground">{position}</p>
             <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">
               {status.replace("-", " ")}
             </p>
+          </div>
+        </div>
+      </div>
+      <div className="rounded-xl bg-muted/20 p-4 ring-1 ring-border md:p-5">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Session timer
+            </p>
+            <p className="mt-1 font-mono text-4xl font-semibold tabular-nums tracking-tight">
+              {status === "clocked-out" ? "0:00" : formatElapsed(now - startedAt)}
+            </p>
+          </div>
+          <Badge tone={status === "on-break" ? "warning" : status === "clocked-in" ? "success" : "neutral"}>
+            {status.replace("-", " ")}
+          </Badge>
+        </div>
+        <div className="mt-4 border-t border-border pt-3">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Today events
+          </p>
+          <div className="flex items-center justify-between gap-3 rounded-lg bg-card px-3 py-2 text-xs ring-1 ring-border">
+            <span>{status === "clocked-out" ? "Ready to clock in" : "PIN accepted"}</span>
+            <span className="font-mono text-muted-foreground">
+              {new Date(startedAt).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </span>
           </div>
         </div>
       </div>
@@ -311,6 +398,7 @@ type ConvexEmployeeState = {
   displayName: string;
   avatarUrl?: string | null;
   positionName: string | null;
+  sessionStartedAt: number;
 };
 
 type DemoEmployeeState = {
@@ -320,6 +408,7 @@ type DemoEmployeeState = {
   avatarColor: string;
   position: string;
   status: TimecardStatus;
+  startedAt: number;
 };
 
 type EmployeeState = ConvexEmployeeState | DemoEmployeeState;
@@ -333,12 +422,12 @@ export function StationKiosk() {
     selectedLocation,
   } = usePortalLocations();
 
-  const [unlocked, setUnlocked] = useState(false);
   const [pin, setPin] = useState("");
   const [submittedPin, setSubmittedPin] = useState("");
   const [employee, setEmployee] = useState<EmployeeState | undefined>();
   const [error, setError] = useState<string | undefined>();
   const handledLookupRef = useRef<string | null>(null);
+  const now = useLiveNow(1000);
 
   const convexEmployee = useQuery(
     api.employees.getByPinForLocation,
@@ -366,6 +455,7 @@ export function StationKiosk() {
         displayName: convexEmployee.displayName,
         avatarUrl: convexEmployee.avatarUrl,
         positionName: convexEmployee.positionName,
+        sessionStartedAt: Date.now(),
       });
       setPin("");
       setSubmittedPin("");
@@ -414,6 +504,7 @@ export function StationKiosk() {
           avatarColor: result.employee.avatarColor,
           position: result.employee.position,
           status: result.status,
+          startedAt: Date.now(),
         });
         setPin("");
         setError(result.errors[0]);
@@ -427,23 +518,14 @@ export function StationKiosk() {
   function handleDemoPunch(action: PunchAction) {
     if (!employee || employee.kind !== "demo") return;
     const next = getNextStatus(employee.status, action);
-    // Build a minimal Employee-like object for describeClockAction
-    const fakeEmployee = {
-      name: employee.displayName,
-      initials: employee.initials,
-      avatarColor: employee.avatarColor,
-      id: "emp-maya" as const,
-      pin: "",
-      role: "employee" as const,
-      position: employee.position as "Barista",
-      active: true,
-      assignedLocationIds: [],
-    };
-    setEmployee({ ...employee, status: next });
-    toast.success(describeClockAction(fakeEmployee, action, "station"));
+    setEmployee({
+      ...employee,
+      status: next,
+      startedAt: action === "clock-in" ? Date.now() : employee.startedAt,
+    });
+    toast.success(`${action.replace("-", " ")} saved for ${employee.displayName}`);
     setPin("");
     setSubmittedPin("");
-    setEmployee(undefined);
   }
 
   function clearEmployee() {
@@ -454,12 +536,7 @@ export function StationKiosk() {
     handledLookupRef.current = null;
   }
 
-  function lockStation() {
-    setUnlocked(false);
-    clearEmployee();
-  }
-
-  const stationHeader = unlocked ? (
+  const stationHeader = (
     <div className="flex w-full max-w-xs flex-col gap-2 sm:max-w-none sm:flex-row sm:items-center">
       <div className="min-w-0 flex-1">
         <LocationSwitcher
@@ -472,42 +549,17 @@ export function StationKiosk() {
           label="Station location"
         />
       </div>
-      <Button variant="outline" size="sm" onClick={lockStation}>
-        <LockKeyholeIcon className="size-4" />
-        Lock
-      </Button>
     </div>
-  ) : null;
+  );
 
   return (
     <PortalShell
       mode="station"
-      title={unlocked ? selectedLocation?.name ?? "Clock-in station" : "Clock-in station"}
-      subtitle={
-        unlocked
-          ? "Shared tablet for employee PIN entry and punch actions."
-          : "Unlock once per shift so the team can record time at this location."
-      }
+      title={selectedLocation?.name ?? "Clock-in station"}
+      subtitle="Shared tablet for employee PIN entry and punch actions."
       headerActions={stationHeader}
     >
-      {!unlocked ? (
-        <div className="grid min-h-[50vh] place-items-center p-4 md:min-h-[60vh]">
-          <div className="w-full max-w-md rounded-xl bg-muted/20 p-6 text-center ring-1 ring-border md:p-8">
-            <LockKeyholeIcon className="mx-auto size-10 text-muted-foreground" strokeWidth={1.6} />
-            <h2 className="mt-4 text-lg font-semibold tracking-tight">Manager unlock</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Unlock this shared screen so employees at this location can record their time.
-            </p>
-            <Button
-              className="mt-6 h-12 w-full rounded-2xl transition-transform duration-150 active:scale-[0.98] md:h-14"
-              onClick={() => setUnlocked(true)}
-            >
-              <ShieldCheckIcon className="size-4" /> Unlock station
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col gap-4 md:gap-5 lg:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 md:gap-5 lg:flex-row">
           <div className="shrink-0 lg:w-[min(100%,420px)]">
             <div className="mb-3 hidden md:block">
               <LiveClock />
@@ -529,9 +581,10 @@ export function StationKiosk() {
                     setPin(samplePin);
                     setError(undefined);
                   }}
-                  enabled={unlocked}
+                  enabled
                   convexLocationId={hasConvex ? (locationId as Id<"locations">) : undefined}
                   demoLocationId={!hasConvex ? (locationId as LocationId) : undefined}
+                  limit={1}
                 />
               ) : null}
             </div>
@@ -546,6 +599,8 @@ export function StationKiosk() {
                   avatarUrl={employee.avatarUrl}
                   positionName={employee.positionName}
                   locationId={locationId as Id<"locations">}
+                  now={now}
+                  sessionStartedAt={employee.sessionStartedAt}
                   onPunchComplete={clearEmployee}
                 />
               ) : (
@@ -555,23 +610,23 @@ export function StationKiosk() {
                   avatarColor={employee.avatarColor}
                   position={employee.position}
                   status={employee.status}
+                  now={now}
+                  startedAt={employee.startedAt}
                   onPunch={handleDemoPunch}
                 />
               )
             ) : (
-              <div className="grid min-h-48 place-items-center rounded-xl bg-muted/20 p-6 text-center ring-1 ring-border md:min-h-full">
+              <div className="grid min-h-[480px] place-items-center rounded-xl bg-muted/20 p-6 text-center ring-1 ring-border">
                 <div>
-                  <p className="text-lg font-semibold tracking-tight">Ready for a PIN</p>
+                  <p className="text-lg font-semibold tracking-tight">Ready for employee PIN</p>
                   <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-                    Employees assigned to this location can clock in, take breaks, or clock out
-                    here.
+                    Enter the sample PIN, then clock in, start break, end break, or clock out.
                   </p>
                 </div>
               </div>
             )}
           </div>
         </div>
-      )}
     </PortalShell>
   );
 }

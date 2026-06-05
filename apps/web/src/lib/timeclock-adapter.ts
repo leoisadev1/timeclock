@@ -93,6 +93,58 @@ export function getTodayDashboard(locationId: LocationId): TodayDashboard {
   };
 }
 
+export function getStationActivity(locationId: LocationId) {
+  const dashboard = getTodayDashboard(locationId);
+  const employeeById = new Map(employees.map((employee) => [employee.id, employee]));
+
+  return {
+    locationId,
+    locationName: dashboard.location.name,
+    timezone: dashboard.location.timezone,
+    businessDate: dashboard.businessDate,
+    onClock: [...dashboard.clockedIn, ...dashboard.onBreak]
+      .map((timecard) => {
+        const employee = employeeById.get(timecard.employeeId);
+        return {
+          timecardId: timecard.id,
+          employeeId: timecard.employeeId,
+          displayName: employee?.name ?? "Unknown",
+          initials: employee?.initials ?? "??",
+          avatarColor: employee?.avatarColor ?? "bg-zinc-600",
+          avatarUrl: employee?.avatarUrl ?? null,
+          positionName: employee?.position ?? null,
+          status: timecard.status,
+          clockIn: timecard.clockIn ?? null,
+          clockOut: timecard.clockOut ?? null,
+          totalBreakMinutes: timecard.breakMinutes,
+        };
+      })
+      .sort((a, b) => a.displayName.localeCompare(b.displayName)),
+    recentEvents: dashboard.recentEvents
+      .map((event) => {
+        const employee = employeeById.get(event.employeeId);
+        return {
+          eventId: event.id,
+          employeeId: event.employeeId,
+          displayName: employee?.name ?? "Unknown",
+          initials: employee?.initials ?? "??",
+          avatarColor: employee?.avatarColor ?? "bg-zinc-600",
+          avatarUrl: employee?.avatarUrl ?? null,
+          type: event.action,
+          time: event.time,
+          source: event.source,
+        };
+      })
+      .slice(0, 16),
+    quickCounts: {
+      onClock: dashboard.clockedIn.length + dashboard.onBreak.length,
+      clockedIn: dashboard.clockedIn.length,
+      onBreak: dashboard.onBreak.length,
+      clockedOut: dashboard.clockedOut.length,
+    },
+  };
+}
+
 export function getDailyReport(locationId: LocationId, reportDate = businessDate) {
   return buildReportRows(
     locationId,

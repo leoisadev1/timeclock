@@ -161,6 +161,91 @@ export const getCurrentStatus = query({
   },
 });
 
+export const getStationActivity = query({
+  args: { locationId: v.id("locations") },
+  handler: async (ctx, args) => {
+    const location = await ctx.db.get(args.locationId);
+    if (!location?.active) {
+      return null;
+    }
+
+    const businessDate = formatIsoDateInTimezone(Date.now(), location.timezone);
+    const timecards = await ctx.db
+      .query("timecards")
+      .withIndex("by_locationId_and_businessDate", (q) =>
+        q.eq("locationId", args.locationId).eq("businessDate", businessDate),
+      )
+      .take(200);
+    const stationTimecards = timecards.filter((timecard) => timecard.source === "station");
+
+    const rows = [];
+    const recentEvents = [];
+
+    for (const timecard of stationTimecards) {
+      const employee = await ctx.db.get(timecard.employeeId);
+      const shift = timecard.shiftId ? await ctx.db.get(timecard.shiftId) : null;
+      const position = shift
+        ? await ctx.db.get(shift.positionId)
+        : employee?.defaultPositionId
+          ? await ctx.db.get(employee.defaultPositionId)
+          : null;
+      const events = await ctx.db
+        .query("timeEvents")
+        .withIndex("by_timecardId", (q) => q.eq("timecardId", timecard._id))
+        .take(50);
+
+      rows.push({
+        timecardId: timecard._id,
+        employeeId: timecard.employeeId,
+        displayName: employee?.displayName ?? "Unknown",
+        avatarUrl: employee?.avatarUrl ?? null,
+        positionName: position?.name ?? null,
+        status: timecard.status,
+        clockInAt: timecard.clockInAt,
+        clockOutAt: timecard.clockOutAt ?? null,
+        totalBreakMinutes: timecard.totalBreakMinutes,
+        workedHours: roundHours(
+          hoursBetween(timecard.clockInAt, timecard.clockOutAt ?? Date.now(), timecard.totalBreakMinutes),
+        ),
+      });
+
+      for (const event of events) {
+        if (event.source !== "station") {
+          continue;
+        }
+        recentEvents.push({
+          eventId: event._id,
+          employeeId: timecard.employeeId,
+          displayName: employee?.displayName ?? "Unknown",
+          avatarUrl: employee?.avatarUrl ?? null,
+          type: event.type,
+          occurredAt: event.occurredAt,
+          source: event.source,
+        });
+      }
+    }
+
+    const activeRows = rows
+      .filter((row) => row.status !== "clocked_out")
+      .sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+    return {
+      locationId: location._id,
+      locationName: location.name,
+      timezone: location.timezone,
+      businessDate,
+      onClock: activeRows,
+      recentEvents: recentEvents.sort((a, b) => b.occurredAt - a.occurredAt).slice(0, 16),
+      quickCounts: {
+        onClock: activeRows.length,
+        clockedIn: activeRows.filter((row) => row.status === "clocked_in").length,
+        onBreak: activeRows.filter((row) => row.status === "on_break").length,
+        clockedOut: rows.filter((row) => row.status === "clocked_out").length,
+      },
+    };
+  },
+});
+
 export const clockIn = mutation({
   args: {
     employeeId: v.id("employees"),
