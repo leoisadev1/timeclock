@@ -1,5 +1,6 @@
+import { PositionsSettingsSection } from "@/components/settings/positions-settings-section";
 import { getLocations } from "@/lib/timeclock-adapter";
-import type { LocationId } from "@/lib/timeclock-types";
+import type { LocationId, LocationPosition } from "@/lib/timeclock-types";
 import { Button } from "@timeclock/ui/components/button";
 import { Input } from "@timeclock/ui/components/input";
 import { Label } from "@timeclock/ui/components/label";
@@ -14,10 +15,15 @@ type SettingsLocation = ReturnType<typeof getLocations>[number];
 export function SettingsView({
   locationId,
   location: providedLocation,
+  positions,
   onSave,
+  onCreatePosition,
+  onUpdatePosition,
+  onRemovePosition,
 }: {
   locationId: LocationId;
   location?: SettingsLocation;
+  positions?: LocationPosition[];
   onSave?: (settings: {
     name: string;
     address: string;
@@ -26,17 +32,24 @@ export function SettingsView({
     lateGraceMinutes: number;
     noShowThresholdMinutes: number;
   }) => Promise<void>;
+  onCreatePosition?: (input: { name: string; color: string }) => Promise<void>;
+  onUpdatePosition?: (
+    positionId: string,
+    input: { name?: string; color?: string },
+  ) => Promise<void>;
+  onRemovePosition?: (positionId: string) => Promise<void>;
 }) {
   const location =
-    providedLocation ?? getLocations().find((candidate) => candidate.id === locationId) ?? getLocations()[0];
+    providedLocation ??
+    getLocations().find((candidate) => candidate.id === locationId) ??
+    getLocations()[0];
 
   return (
     <div className="grid gap-4">
       <header className="animate-in fade-in-0 duration-200">
         <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
         <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-          MVP location controls for timezone, week start, grace/no-show thresholds, and operating
-          hours.
+          Location rules for schedule weeks, late arrivals, no-shows, and operating hours.
         </p>
       </header>
 
@@ -55,9 +68,12 @@ export function SettingsView({
                   name: String(form.get("name") ?? location.name),
                   address: String(form.get("address") ?? location.address),
                   timezone: String(form.get("timezone") ?? location.timezone),
-                  weekStartDay: String(form.get("weekStart") ?? location.weekStart) === "Monday" ? 1 : 0,
+                  weekStartDay:
+                    String(form.get("weekStart") ?? location.weekStart) === "Monday" ? 1 : 0,
                   lateGraceMinutes: Number(form.get("lateGraceMinutes") ?? location.graceMinutes),
-                  noShowThresholdMinutes: Number(form.get("noShowThresholdMinutes") ?? location.noShowMinutes),
+                  noShowThresholdMinutes: Number(
+                    form.get("noShowThresholdMinutes") ?? location.noShowMinutes,
+                  ),
                 });
                 return;
               }
@@ -78,16 +94,20 @@ export function SettingsView({
                 <Input name="address" defaultValue={location.address} />
               </label>
               <label className="grid gap-1">
-                <Label>Week start</Label>
+                <Label>Week starts on</Label>
                 <Input name="weekStart" defaultValue={location.weekStart} />
               </label>
               <label className="grid gap-1">
-                <Label>Late grace minutes</Label>
+                <Label>Late grace period (minutes)</Label>
                 <Input name="lateGraceMinutes" type="number" defaultValue={location.graceMinutes} />
               </label>
               <label className="grid gap-1">
-                <Label>No-show threshold minutes</Label>
-                <Input name="noShowThresholdMinutes" type="number" defaultValue={location.noShowMinutes} />
+                <Label>No-show after (minutes)</Label>
+                <Input
+                  name="noShowThresholdMinutes"
+                  type="number"
+                  defaultValue={location.noShowMinutes}
+                />
               </label>
             </div>
             <div className="flex justify-end">
@@ -129,6 +149,13 @@ export function SettingsView({
           </div>
         </aside>
       </section>
+
+      <PositionsSettingsSection
+        positions={positions}
+        onCreate={onCreatePosition}
+        onUpdate={onUpdatePosition}
+        onRemove={onRemovePosition}
+      />
     </div>
   );
 }

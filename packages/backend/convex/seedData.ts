@@ -19,7 +19,12 @@ type LocationSeed = {
   timezone: string;
   weekStartDay: number;
   stationUnlockCode: string;
-  hours: Array<{ dayOfWeek: number; opensAtMinutes: number; closesAtMinutes: number; isClosed: boolean }>;
+  hours: Array<{
+    dayOfWeek: number;
+    opensAtMinutes: number;
+    closesAtMinutes: number;
+    isClosed: boolean;
+  }>;
   positions: Array<{ name: string; color: string }>;
 };
 
@@ -463,7 +468,12 @@ async function upsertEmployee(
         q.eq("managerId", employeeId).eq("locationId", locationId),
       )
       .unique();
-    const assignmentData = { managerId: employeeId, locationId, active: true, updatedAt: timestamp };
+    const assignmentData = {
+      managerId: employeeId,
+      locationId,
+      active: true,
+      updatedAt: timestamp,
+    };
     if (assignment) {
       await ctx.db.patch(assignment._id, assignmentData);
     } else {
@@ -560,9 +570,21 @@ const weeklyShiftTemplates: Record<string, ShiftTemplate[]> = {
   downtown: [
     { dayOfWeek: 1, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Manager", pin: "1002" },
     { dayOfWeek: 1, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Barista", pin: "2145" },
-    { dayOfWeek: 1, startMinutes: 6 * 60 + 30, endMinutes: 14 * 60 + 30, position: "Cook", pin: "4729" },
+    {
+      dayOfWeek: 1,
+      startMinutes: 6 * 60 + 30,
+      endMinutes: 14 * 60 + 30,
+      position: "Cook",
+      pin: "4729",
+    },
     { dayOfWeek: 1, startMinutes: 8 * 60, endMinutes: 16 * 60, position: "Cashier", pin: "3882" },
-    { dayOfWeek: 1, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Shift Lead", pin: "6842" },
+    {
+      dayOfWeek: 1,
+      startMinutes: 12 * 60,
+      endMinutes: 18 * 60,
+      position: "Shift Lead",
+      pin: "6842",
+    },
     { dayOfWeek: 1, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Barista", pin: "7935" },
 
     { dayOfWeek: 2, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Barista", pin: "2461" },
@@ -575,21 +597,39 @@ const weeklyShiftTemplates: Record<string, ShiftTemplate[]> = {
     { dayOfWeek: 3, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Barista", pin: "2145" },
     { dayOfWeek: 3, startMinutes: 7 * 60, endMinutes: 15 * 60, position: "Cook", pin: "4729" },
     { dayOfWeek: 3, startMinutes: 8 * 60, endMinutes: 16 * 60, position: "Cashier", pin: "3882" },
-    { dayOfWeek: 3, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Shift Lead", pin: "6842" },
+    {
+      dayOfWeek: 3,
+      startMinutes: 12 * 60,
+      endMinutes: 18 * 60,
+      position: "Shift Lead",
+      pin: "6842",
+    },
     { dayOfWeek: 3, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Barista", pin: "7935" },
 
     { dayOfWeek: 4, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Barista", pin: "2461" },
     { dayOfWeek: 4, startMinutes: 7 * 60, endMinutes: 15 * 60, position: "Cook", pin: "3570" },
     { dayOfWeek: 4, startMinutes: 8 * 60, endMinutes: 16 * 60, position: "Cashier", pin: "9017" },
     { dayOfWeek: 4, startMinutes: 10 * 60, endMinutes: 18 * 60, position: "Manager", pin: "1001" },
-    { dayOfWeek: 4, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Shift Lead", pin: "6842" },
+    {
+      dayOfWeek: 4,
+      startMinutes: 12 * 60,
+      endMinutes: 18 * 60,
+      position: "Shift Lead",
+      pin: "6842",
+    },
     { dayOfWeek: 4, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Barista", pin: "2145" },
 
     { dayOfWeek: 5, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Manager", pin: "1002" },
     { dayOfWeek: 5, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Barista", pin: "2145" },
     { dayOfWeek: 5, startMinutes: 7 * 60, endMinutes: 15 * 60, position: "Cook", pin: "4729" },
     { dayOfWeek: 5, startMinutes: 8 * 60, endMinutes: 16 * 60, position: "Cashier", pin: "3882" },
-    { dayOfWeek: 5, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Shift Lead", pin: "6842" },
+    {
+      dayOfWeek: 5,
+      startMinutes: 12 * 60,
+      endMinutes: 20 * 60,
+      position: "Shift Lead",
+      pin: "6842",
+    },
     { dayOfWeek: 5, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Barista", pin: "2461" },
     { dayOfWeek: 5, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Cook", pin: "3570" },
     { dayOfWeek: 5, startMinutes: 14 * 60, endMinutes: 20 * 60, position: "Cashier", pin: "9017" },
@@ -598,7 +638,13 @@ const weeklyShiftTemplates: Record<string, ShiftTemplate[]> = {
     { dayOfWeek: 6, startMinutes: 7 * 60, endMinutes: 15 * 60, position: "Barista", pin: "2461" },
     { dayOfWeek: 6, startMinutes: 7 * 60, endMinutes: 15 * 60, position: "Cook", pin: "3570" },
     { dayOfWeek: 6, startMinutes: 9 * 60, endMinutes: 17 * 60, position: "Cashier", pin: "9017" },
-    { dayOfWeek: 6, startMinutes: 10 * 60, endMinutes: 18 * 60, position: "Shift Lead", pin: "6842" },
+    {
+      dayOfWeek: 6,
+      startMinutes: 10 * 60,
+      endMinutes: 18 * 60,
+      position: "Shift Lead",
+      pin: "6842",
+    },
     { dayOfWeek: 6, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Barista", pin: "2145" },
     { dayOfWeek: 6, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Cook", pin: "4729" },
     { dayOfWeek: 6, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Barista", pin: "7935" },
@@ -607,17 +653,35 @@ const weeklyShiftTemplates: Record<string, ShiftTemplate[]> = {
     { dayOfWeek: 0, startMinutes: 8 * 60, endMinutes: 16 * 60, position: "Barista", pin: "7935" },
     { dayOfWeek: 0, startMinutes: 8 * 60, endMinutes: 16 * 60, position: "Cook", pin: "4729" },
     { dayOfWeek: 0, startMinutes: 10 * 60, endMinutes: 16 * 60, position: "Cashier", pin: "9017" },
-    { dayOfWeek: 0, startMinutes: 10 * 60, endMinutes: 16 * 60, position: "Shift Lead", pin: "6842" },
+    {
+      dayOfWeek: 0,
+      startMinutes: 10 * 60,
+      endMinutes: 16 * 60,
+      position: "Shift Lead",
+      pin: "6842",
+    },
   ],
   riverside: [
     { dayOfWeek: 1, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Manager", pin: "1003" },
     { dayOfWeek: 1, startMinutes: 11 * 60, endMinutes: 18 * 60, position: "Server", pin: "6194" },
     { dayOfWeek: 1, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Cook", pin: "7426" },
     { dayOfWeek: 1, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Cashier", pin: "4568" },
-    { dayOfWeek: 1, startMinutes: 15 * 60, endMinutes: 21 * 60, position: "Shift Lead", pin: "5308" },
+    {
+      dayOfWeek: 1,
+      startMinutes: 15 * 60,
+      endMinutes: 21 * 60,
+      position: "Shift Lead",
+      pin: "5308",
+    },
     { dayOfWeek: 1, startMinutes: 16 * 60, endMinutes: 21 * 60, position: "Server", pin: "2784" },
 
-    { dayOfWeek: 2, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Shift Lead", pin: "5308" },
+    {
+      dayOfWeek: 2,
+      startMinutes: 11 * 60,
+      endMinutes: 19 * 60,
+      position: "Shift Lead",
+      pin: "5308",
+    },
     { dayOfWeek: 2, startMinutes: 11 * 60, endMinutes: 18 * 60, position: "Server", pin: "8651" },
     { dayOfWeek: 2, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Cook", pin: "3495" },
     { dayOfWeek: 2, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Cashier", pin: "5973" },
@@ -630,7 +694,13 @@ const weeklyShiftTemplates: Record<string, ShiftTemplate[]> = {
     { dayOfWeek: 3, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Cashier", pin: "4568" },
     { dayOfWeek: 3, startMinutes: 16 * 60, endMinutes: 21 * 60, position: "Server", pin: "8651" },
 
-    { dayOfWeek: 4, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Shift Lead", pin: "5308" },
+    {
+      dayOfWeek: 4,
+      startMinutes: 11 * 60,
+      endMinutes: 19 * 60,
+      position: "Shift Lead",
+      pin: "5308",
+    },
     { dayOfWeek: 4, startMinutes: 11 * 60, endMinutes: 18 * 60, position: "Server", pin: "6194" },
     { dayOfWeek: 4, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Cook", pin: "3495" },
     { dayOfWeek: 4, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Cashier", pin: "5973" },
@@ -641,7 +711,13 @@ const weeklyShiftTemplates: Record<string, ShiftTemplate[]> = {
     { dayOfWeek: 5, startMinutes: 11 * 60, endMinutes: 18 * 60, position: "Server", pin: "8651" },
     { dayOfWeek: 5, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Cook", pin: "7426" },
     { dayOfWeek: 5, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Cashier", pin: "4568" },
-    { dayOfWeek: 5, startMinutes: 15 * 60, endMinutes: 23 * 60, position: "Shift Lead", pin: "5308" },
+    {
+      dayOfWeek: 5,
+      startMinutes: 15 * 60,
+      endMinutes: 23 * 60,
+      position: "Shift Lead",
+      pin: "5308",
+    },
     { dayOfWeek: 5, startMinutes: 15 * 60, endMinutes: 23 * 60, position: "Cook", pin: "3495" },
     { dayOfWeek: 5, startMinutes: 16 * 60, endMinutes: 23 * 60, position: "Server", pin: "6194" },
     { dayOfWeek: 5, startMinutes: 17 * 60, endMinutes: 23 * 60, position: "Server", pin: "2784" },
@@ -650,7 +726,13 @@ const weeklyShiftTemplates: Record<string, ShiftTemplate[]> = {
     { dayOfWeek: 6, startMinutes: 10 * 60, endMinutes: 17 * 60, position: "Server", pin: "6194" },
     { dayOfWeek: 6, startMinutes: 10 * 60, endMinutes: 18 * 60, position: "Cook", pin: "3495" },
     { dayOfWeek: 6, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Cashier", pin: "4568" },
-    { dayOfWeek: 6, startMinutes: 15 * 60, endMinutes: 23 * 60, position: "Shift Lead", pin: "5308" },
+    {
+      dayOfWeek: 6,
+      startMinutes: 15 * 60,
+      endMinutes: 23 * 60,
+      position: "Shift Lead",
+      pin: "5308",
+    },
     { dayOfWeek: 6, startMinutes: 15 * 60, endMinutes: 23 * 60, position: "Cook", pin: "7426" },
     { dayOfWeek: 6, startMinutes: 16 * 60, endMinutes: 23 * 60, position: "Server", pin: "8651" },
     { dayOfWeek: 6, startMinutes: 16 * 60, endMinutes: 23 * 60, position: "Server", pin: "2784" },
@@ -734,7 +816,13 @@ async function seedSchedules(
     const today = formatIsoDateInTimezone(now(), locationSeed.timezone);
     const currentWeekStart = getWeekStartDate(today, locationSeed.weekStartDay);
     const nextWeekStart = addDays(currentWeekStart, 7);
-    const currentScheduleId = await upsertSchedule(ctx, companyId, locationId, currentWeekStart, true);
+    const currentScheduleId = await upsertSchedule(
+      ctx,
+      companyId,
+      locationId,
+      currentWeekStart,
+      true,
+    );
     const nextScheduleId = await upsertSchedule(ctx, companyId, locationId, nextWeekStart, false);
     await clearScheduleShifts(ctx, currentScheduleId);
     await clearScheduleShifts(ctx, nextScheduleId);
@@ -964,7 +1052,10 @@ export async function ensureDemoData(ctx: MutationCtx) {
   for (const locationSeed of locations) {
     const locationId = await upsertLocation(ctx, companyId, locationSeed);
     locationIds.set(locationSeed.key, locationId);
-    positionIds.set(locationSeed.key, await upsertPositions(ctx, companyId, locationId, locationSeed));
+    positionIds.set(
+      locationSeed.key,
+      await upsertPositions(ctx, companyId, locationId, locationSeed),
+    );
   }
 
   const employeeIds = new Map<string, Id<"employees">>();
@@ -984,4 +1075,105 @@ export async function ensureDemoData(ctx: MutationCtx) {
     employeeCount: employees.length,
     locationCount: locations.length,
   };
+}
+
+export async function resetDemoData(ctx: MutationCtx) {
+  const company = await ctx.db
+    .query("companies")
+    .withIndex("by_slug", (q) => q.eq("slug", DEMO_COMPANY_SLUG))
+    .unique();
+
+  if (company) {
+    const locationsToDelete = await ctx.db
+      .query("locations")
+      .withIndex("by_companyId", (q) => q.eq("companyId", company._id))
+      .take(50);
+    const employeesToDelete = await ctx.db
+      .query("employees")
+      .withIndex("by_companyId", (q) => q.eq("companyId", company._id))
+      .take(200);
+
+    for (const location of locationsToDelete) {
+      const schedules = await ctx.db
+        .query("schedules")
+        .withIndex("by_locationId", (q) => q.eq("locationId", location._id))
+        .take(50);
+      for (const schedule of schedules) {
+        const shifts = await ctx.db
+          .query("shifts")
+          .withIndex("by_scheduleId", (q) => q.eq("scheduleId", schedule._id))
+          .take(200);
+        for (const shift of shifts) {
+          await ctx.db.delete(shift._id);
+        }
+        await ctx.db.delete(schedule._id);
+      }
+
+      const timecards = await ctx.db
+        .query("timecards")
+        .withIndex("by_locationId_and_businessDate", (q) => q.eq("locationId", location._id))
+        .take(200);
+      for (const timecard of timecards) {
+        const events = await ctx.db
+          .query("timeEvents")
+          .withIndex("by_timecardId", (q) => q.eq("timecardId", timecard._id))
+          .take(50);
+        for (const event of events) {
+          await ctx.db.delete(event._id);
+        }
+
+        const edits = await ctx.db
+          .query("timecardEdits")
+          .withIndex("by_timecardId", (q) => q.eq("timecardId", timecard._id))
+          .take(50);
+        for (const edit of edits) {
+          await ctx.db.delete(edit._id);
+        }
+
+        await ctx.db.delete(timecard._id);
+      }
+
+      const hours = await ctx.db
+        .query("locationHours")
+        .withIndex("by_locationId", (q) => q.eq("locationId", location._id))
+        .take(14);
+      for (const row of hours) {
+        await ctx.db.delete(row._id);
+      }
+
+      const locationPositions = await ctx.db
+        .query("positions")
+        .withIndex("by_locationId", (q) => q.eq("locationId", location._id))
+        .take(50);
+      for (const position of locationPositions) {
+        await ctx.db.delete(position._id);
+      }
+
+      await ctx.db.delete(location._id);
+    }
+
+    for (const employee of employeesToDelete) {
+      const employeeAssignments = await ctx.db
+        .query("employeeLocations")
+        .withIndex("by_employeeId", (q) => q.eq("employeeId", employee._id))
+        .take(50);
+      for (const assignment of employeeAssignments) {
+        await ctx.db.delete(assignment._id);
+      }
+
+      const managerAssignments = await ctx.db
+        .query("managerLocations")
+        .withIndex("by_managerId", (q) => q.eq("managerId", employee._id))
+        .take(50);
+      for (const assignment of managerAssignments) {
+        await ctx.db.delete(assignment._id);
+      }
+
+      await ctx.db.delete(employee._id);
+    }
+
+    await ctx.db.delete(company._id);
+  }
+
+  return await ensureDemoData(ctx);
 }

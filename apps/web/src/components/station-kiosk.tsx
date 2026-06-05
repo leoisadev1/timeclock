@@ -40,16 +40,12 @@ function LiveClock() {
     return () => clearInterval(id);
   }, []);
 
-  return (
-    <span className="text-5xl font-light tabular-nums tracking-tight">{time}</span>
-  );
+  return <span className="text-5xl font-light tabular-nums tracking-tight">{time}</span>;
 }
 
 // ─── Status helpers ───────────────────────────────────────────────────────
 
-function convexStatusToLocal(
-  status: "clocked_in" | "on_break" | "clocked_out",
-): TimecardStatus {
+function convexStatusToLocal(status: "clocked_in" | "on_break" | "clocked_out"): TimecardStatus {
   if (status === "clocked_in") return "clocked-in";
   if (status === "on_break") return "on-break";
   return "clocked-out";
@@ -210,7 +206,7 @@ function ConvexEmployeePanel({
       } else {
         await clockOutMutation({ employeeId, source: "station" });
       }
-      toast.success(`${action.replace("-", " ")} recorded for ${displayName}`);
+      toast.success(`${action.replace("-", " ")} saved for ${displayName}`);
       onPunchComplete();
     } catch {
       toast.error("Action failed. Please try again.");
@@ -223,11 +219,7 @@ function ConvexEmployeePanel({
       <div className="rounded-2xl bg-background/5 p-5 ring-1 ring-background/20">
         <div className="flex items-center gap-4">
           {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={displayName}
-              className="size-16 rounded-full object-cover"
-            />
+            <img src={avatarUrl} alt={displayName} className="size-16 rounded-full object-cover" />
           ) : (
             <span className="grid size-16 place-items-center rounded-full bg-background/10 text-xl font-semibold">
               {initials}
@@ -464,7 +456,6 @@ export function StationKiosk() {
   return (
     <main className="min-h-svh bg-foreground p-3 text-background">
       <div className="mx-auto grid min-h-[calc(100svh-1.5rem)] max-w-6xl grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-2xl bg-foreground ring-1 ring-background/20">
-
         <header className="flex flex-col gap-3 bg-background/5 p-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
             <ClockIcon className="size-6 text-background/60" strokeWidth={1.5} />
@@ -472,8 +463,10 @@ export function StationKiosk() {
               <p className="text-sm font-medium text-background/60">
                 {selectedLocation?.name ?? "Location clock station"}
               </p>
-              {unlocked ? <LiveClock /> : (
-                <h1 className="text-xl font-semibold">Location Clock Station</h1>
+              {unlocked ? (
+                <LiveClock />
+              ) : (
+                <h1 className="text-xl font-semibold">Team clock-in station</h1>
               )}
             </div>
           </div>
@@ -506,7 +499,7 @@ export function StationKiosk() {
               <LockKeyholeIcon className="mx-auto size-10" strokeWidth={1.6} />
               <h2 className="mt-4 text-lg font-semibold tracking-tight">Manager unlock</h2>
               <p className="mt-2 text-sm text-background/70">
-                Demo unlock placeholder while manager authenticated station handoff is completed.
+                Unlock this shared screen so employees at this location can record their time.
               </p>
               <Button
                 className="mt-5 h-12 w-full rounded-2xl transition-transform duration-150 active:scale-[0.98]"
@@ -521,7 +514,7 @@ export function StationKiosk() {
             {/* PIN entry */}
             <div className="grid gap-3 content-start">
               <div className="rounded-2xl bg-background/5 p-4 ring-1 ring-background/20">
-                <p className="mb-3 text-sm font-semibold text-background/90">Employee PIN</p>
+                <p className="mb-3 text-sm font-semibold text-background/90">Enter employee PIN</p>
                 <StationPinKeypad
                   pin={pin}
                   onKey={handleKey}
@@ -556,9 +549,10 @@ export function StationKiosk() {
               ) : (
                 <div className="grid min-h-80 place-items-center rounded-2xl bg-background/5 p-6 text-center ring-1 ring-background/20">
                   <div>
-                    <p className="text-lg font-semibold tracking-tight">Enter PIN</p>
+                    <p className="text-lg font-semibold tracking-tight">Ready for a PIN</p>
                     <p className="mt-2 text-sm text-background/70">
-                      Active employees assigned to this location can punch here.
+                      Employees assigned to this location can clock in, take breaks, or clock out
+                      here.
                     </p>
                   </div>
                 </div>
@@ -574,7 +568,7 @@ export function StationKiosk() {
           <div className="w-full max-w-sm animate-in fade-in-0 slide-in-from-bottom-2 rounded-2xl bg-foreground p-5 text-background ring-1 ring-background/20 duration-200">
             <h2 className="text-lg font-semibold tracking-tight">Exit station mode?</h2>
             <p className="mt-2 text-sm text-background/70">
-              Manager confirmation is required before returning to normal navigation.
+              Return to the demo home screen. The station will need to be unlocked again.
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <Button
@@ -582,13 +576,13 @@ export function StationKiosk() {
                 className="rounded-xl border-background/20 text-background transition-colors duration-150 hover:bg-background/10 active:scale-[0.98]"
                 onClick={() => setExitConfirm(false)}
               >
-                Stay
+                Stay in station
               </Button>
               <Link
                 to="/"
                 className="inline-flex h-9 items-center justify-center rounded-xl bg-background px-3 text-xs font-medium text-foreground transition-transform duration-150 active:scale-[0.98]"
               >
-                Exit
+                Exit station
               </Link>
             </div>
           </div>

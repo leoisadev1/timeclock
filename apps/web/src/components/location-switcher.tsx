@@ -4,6 +4,7 @@ import { cn } from "@timeclock/ui/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
@@ -90,13 +91,15 @@ export function LocationSwitcher({
           {allowCreate && onCreateLocation ? (
             <>
               <DropdownMenuSeparator className="my-1.5" />
-              <DropdownMenuItem
-                className="gap-2 py-2.5 text-sm font-medium text-primary focus:text-primary"
-                onSelect={() => setCreateOpen(true)}
-              >
-                <PlusIcon className="size-4" strokeWidth={2} />
-                New location
-              </DropdownMenuItem>
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  className="gap-2 py-2.5 text-sm font-medium text-primary focus:text-primary"
+                  onSelect={() => setCreateOpen(true)}
+                >
+                  <PlusIcon className="size-4" strokeWidth={2} />
+                  New location
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
             </>
           ) : null}
         </DropdownMenuContent>

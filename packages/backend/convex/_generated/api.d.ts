@@ -12,6 +12,7 @@ import type * as demo from "../demo.js";
 import type * as employees from "../employees.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as locations from "../locations.js";
+import type * as positions from "../positions.js";
 import type * as privateData from "../privateData.js";
 import type * as reports from "../reports.js";
 import type * as schedules from "../schedules.js";
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   employees: typeof employees;
   healthCheck: typeof healthCheck;
   locations: typeof locations;
+  positions: typeof positions;
   privateData: typeof privateData;
   reports: typeof reports;
   schedules: typeof schedules;

@@ -18,11 +18,11 @@ import type {
   Timecard,
   TodayDashboard as TodayDashboardData,
 } from "@/lib/timeclock-types";
-import { SignInButton, useAuth } from "@clerk/tanstack-react-start";
+import { useAuth } from "@clerk/tanstack-react-start";
 import { api } from "@timeclock/backend/convex/_generated/api";
 import type { Id } from "@timeclock/backend/convex/_generated/dataModel";
 import { Button } from "@timeclock/ui/components/button";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
@@ -34,13 +34,7 @@ type DashboardSearch = {
   week?: string;
 };
 
-const MANAGER_VIEWS: ManagerView[] = [
-  "today",
-  "schedule",
-  "employees",
-  "reports",
-  "settings",
-];
+const MANAGER_VIEWS: ManagerView[] = ["today", "schedule", "employees", "reports", "settings"];
 
 function isValidView(value: unknown): value is ManagerView {
   return typeof value === "string" && MANAGER_VIEWS.includes(value as ManagerView);
@@ -52,6 +46,14 @@ export const Route = createFileRoute("/dashboard")({
     location: typeof search.location === "string" ? search.location : undefined,
     week: typeof search.week === "string" ? search.week : undefined,
   }),
+  beforeLoad: ({ context }) => {
+    if (!context.userId) {
+      throw redirect({
+        to: "/auth",
+        search: { reason: "dashboard", redirect: "/dashboard" },
+      });
+    }
+  },
   component: RouteComponent,
 });
 
@@ -67,12 +69,20 @@ const AVATAR_COLORS = [
   "bg-amber-500",
 ];
 
-type ConvexLocation = NonNullable<NonNullable<ReturnType<typeof useQuery<typeof api.locations.listForCurrentUser>>>[number]>;
+type ConvexLocation = NonNullable<
+  NonNullable<ReturnType<typeof useQuery<typeof api.locations.listForCurrentUser>>>[number]
+>;
 type ConvexDashboard = NonNullable<ReturnType<typeof useQuery<typeof api.today.getDashboard>>>;
 type ConvexWeek = NonNullable<ReturnType<typeof useQuery<typeof api.schedules.getWeek>>>;
-type ConvexEmployees = NonNullable<ReturnType<typeof useQuery<typeof api.employees.listByLocation>>>;
-type ConvexDailyReport = NonNullable<ReturnType<typeof useQuery<typeof api.reports.dailyTimesheet>>>;
-type ConvexWeeklyReport = NonNullable<ReturnType<typeof useQuery<typeof api.reports.weeklySummary>>>;
+type ConvexEmployees = NonNullable<
+  ReturnType<typeof useQuery<typeof api.employees.listByLocation>>
+>;
+type ConvexDailyReport = NonNullable<
+  ReturnType<typeof useQuery<typeof api.reports.dailyTimesheet>>
+>;
+type ConvexWeeklyReport = NonNullable<
+  ReturnType<typeof useQuery<typeof api.reports.weeklySummary>>
+>;
 
 function minutesToTime(minutes: number): string {
   const h = Math.floor(minutes / 60);
@@ -218,12 +228,15 @@ function mapEmployee(row: ConvexEmployees[number], _locationId: LocationId): Emp
   return {
     id: row.id,
     name: row.displayName,
+    firstName: row.firstName,
+    lastName: row.lastName,
     initials: initials(row.displayName),
     avatarColor: avatarColor(row.id),
     avatarUrl: employeeAvatarUrl(row.id, row.displayName, row.avatarUrl),
     pin: row.pin,
     role: row.role,
     position: normalizePosition(row.positionName),
+    positionId: row.positionId ?? undefined,
     active: row.active,
     assignedLocationIds: row.assignedLocationIds,
     email: row.email ?? undefined,
@@ -437,22 +450,6 @@ function mapWeeklyReport(report: ConvexWeeklyReport, locationId: LocationId): Re
   }));
 }
 
-function positionOptions(week: ConvexWeek | undefined, employees: ConvexEmployees): Array<{ id: string; name: Position }> {
-  const byName = new Map<Position, string>();
-  for (const employee of employees) {
-    if (employee.positionId && employee.positionName) {
-      byName.set(normalizePosition(employee.positionName), employee.positionId);
-    }
-  }
-  for (const shift of week?.shifts ?? []) {
-    byName.set(normalizePosition(shift.positionName), shift.positionId);
-  }
-  for (const coverage of week?.coverageSummary ?? []) {
-    byName.set(normalizePosition(coverage.positionName), coverage.positionId);
-  }
-  return Array.from(byName.entries()).map(([name, id]) => ({ id, name }));
-}
-
 function shiftPayload(
   shift: Shift,
   schedule: ScheduleWeek,
@@ -460,14 +457,16 @@ function shiftPayload(
   positions: Array<{ id: string; name: Position }>,
   existingShiftIds: Set<string>,
 ) {
-  const positionId = shift.positionId ?? positions.find((position) => position.name === shift.position)?.id;
+  const positionId =
+    shift.positionId ?? positions.find((position) => position.name === shift.position)?.id;
   if (!positionId) {
     throw new Error("Pick a position that exists in this location before saving the shift.");
   }
   const businessDate = businessDateForShift(schedule.weekStartDate, shift.day);
   const startMinutes = parseClockMinutes(shift.start);
   const endMinutes = parseClockMinutes(shift.end);
-  const endDate = shift.overnight || endMinutes <= startMinutes ? addDays(businessDate, 1) : businessDate;
+  const endDate =
+    shift.overnight || endMinutes <= startMinutes ? addDays(businessDate, 1) : businessDate;
   return {
     weekStartDate: schedule.weekStartDate,
     shiftId: existingShiftIds.has(shift.id) ? (shift.id as Id<"shifts">) : undefined,
@@ -485,11 +484,15 @@ function RouteComponent() {
   const navigate = Route.useNavigate();
   const auth = useAuth();
   const todayDateString = new Date().toLocaleDateString("en-CA");
-  const rawConvexLocations = useQuery(api.locations.listForCurrentUser);
+  const isSignedIn = auth.isSignedIn === true;
+  const canLoadManagerData = auth.isLoaded && isSignedIn;
+  const rawConvexLocations = useQuery(
+    api.locations.listForCurrentUser,
+    canLoadManagerData ? {} : "skip",
+  );
   const convexLocations = (rawConvexLocations ?? []).filter(
     (loc): loc is NonNullable<typeof loc> => loc !== null,
   );
-  const isLoadingLocations = rawConvexLocations === undefined;
   const hasConvexLocations = convexLocations.length > 0;
 
   const locations: Location[] = convexLocations.map(mapConvexLocation);
@@ -518,7 +521,10 @@ function RouteComponent() {
   const effectiveLocationId = activeLocation?.id ?? "";
   const activeConvexLocation = hasConvexLocations ? convexLocations[safeIndex] : undefined;
   const convexLocationId = activeConvexLocation?.id ?? null;
-  const weekStartDate = getWeekStartDate(todayDateString, activeLocation?.weekStart === "Sunday" ? 0 : 1);
+  const weekStartDate = getWeekStartDate(
+    todayDateString,
+    activeLocation?.weekStart === "Sunday" ? 0 : 1,
+  );
   const nextWeekStartDate = addDays(weekStartDate, 7);
   const effectiveViewingWeek = viewingWeekStart ?? nextWeekStartDate;
 
@@ -540,6 +546,10 @@ function RouteComponent() {
     api.employees.listByLocation,
     convexLocationId ? { locationId: convexLocationId } : "skip",
   );
+  const convexPositions = useQuery(
+    api.positions.listByLocation,
+    convexLocationId ? { locationId: convexLocationId } : "skip",
+  );
   const dailyReport = useQuery(
     api.reports.dailyTimesheet,
     convexLocationId ? { locationId: convexLocationId, businessDate: todayDateString } : "skip",
@@ -558,10 +568,16 @@ function RouteComponent() {
   const duplicateShiftMutation = useMutation(api.schedules.duplicateShift);
   const publishWeek = useMutation(api.schedules.publishWeek);
   const deactivateEmployee = useMutation(api.employees.deactivate);
+  const updateEmployee = useMutation(api.employees.update);
+  const createEmployee = useMutation(api.employees.create);
+  const createPosition = useMutation(api.positions.create);
+  const updatePosition = useMutation(api.positions.update);
+  const deactivatePosition = useMutation(api.positions.deactivate);
   const updateSettings = useMutation(api.locations.updateSettings);
-  const claimDemoManager = useMutation(api.demo.claimDemoManager);
+  const resetAndSeedForCurrentUser = useMutation(api.demo.resetAndSeedForCurrentUser);
   const createLocationMutation = useMutation(api.locations.create);
   const [createLocationPending, setCreateLocationPending] = useState(false);
+  const [seedResetPending, setSeedResetPending] = useState(false);
 
   const employees = useMemo(
     () =>
@@ -573,10 +589,16 @@ function RouteComponent() {
   const currentSchedule = currentWeek
     ? mapScheduleWeek(currentWeek, effectiveLocationId)
     : undefined;
-  const schedule = viewingWeek
-    ? mapScheduleWeek(viewingWeek, effectiveLocationId)
-    : undefined;
-  const positions = positionOptions(viewingWeek ?? currentWeek, convexEmployees ?? []);
+  const schedule = viewingWeek ? mapScheduleWeek(viewingWeek, effectiveLocationId) : undefined;
+  const locationPositions = useMemo(() => convexPositions ?? [], [convexPositions]);
+  const positions = useMemo(
+    () =>
+      locationPositions.map((position) => ({
+        id: position.id,
+        name: normalizePosition(position.name),
+      })),
+    [locationPositions],
+  );
   const existingShiftIds = useMemo(
     () => new Set((viewingWeek?.shifts ?? []).map((shift) => shift.id)),
     [viewingWeek],
@@ -587,42 +609,31 @@ function RouteComponent() {
       ? mapDashboard(convexDashboard, activeLocation, currentSchedule)
       : undefined;
 
-  if (isLoadingLocations) {
-    return <DashboardState title="Loading live data" detail="Connecting to the cloud Convex deployment." />;
-  }
-
   if (!activeLocation || !convexLocationId) {
     return (
       <DashboardState
-        title="No live manager data"
-        detail={
-          auth.isSignedIn
-            ? "Your current Clerk login is not linked to a seeded manager record yet."
-            : "Sign in with Clerk first, then link this session to the seeded demo manager."
-        }
+        title="Set up your manager workspace"
+        detail="Reset the demo data and seed it for your signed-in Clerk user."
         action={
-          !auth.isLoaded ? null : auth.isSignedIn ? (
-            <Button
-              onClick={async () => {
-                try {
-                  await claimDemoManager({
-                    email: "manager@timeclock.demo",
-                    password: "demo-manager",
-                  });
-                  toast.success("Demo manager access linked");
-                  window.location.reload();
-                } catch (error) {
-                  toast.error(error instanceof Error ? error.message : "Could not link demo access");
-                }
-              }}
-            >
-              Use demo manager access
-            </Button>
-          ) : (
-            <SignInButton mode="modal">
-              <Button>Sign in with Clerk</Button>
-            </SignInButton>
-          )
+          <Button
+            disabled={seedResetPending}
+            onClick={async () => {
+              setSeedResetPending(true);
+              try {
+                const seeded = await resetAndSeedForCurrentUser({});
+                toast.success(`${seeded.linkedManager.name} is linked to this Clerk user`);
+                updateSearch({ location: undefined, week: undefined });
+              } catch (error) {
+                toast.error(
+                  error instanceof Error ? error.message : "Could not seed manager access",
+                );
+              } finally {
+                setSeedResetPending(false);
+              }
+            }}
+          >
+            {seedResetPending ? "Seeding..." : "Reset and seed for my user"}
+          </Button>
         }
       />
     );
@@ -660,19 +671,21 @@ function RouteComponent() {
           : undefined
       }
     >
-      {activeView === "today" && (
-        dashboardData ? (
+      {activeView === "today" &&
+        (dashboardData ? (
           <TodayDashboard
             data={dashboardData}
             employees={employees ?? []}
             onNavigate={(view) => updateSearch({ view })}
           />
         ) : (
-          <DashboardState title="Loading today" detail="Fetching live schedule and attendance data." />
-        )
-      )}
-      {activeView === "schedule" && (
-        schedule && viewingWeek ? (
+          <DashboardState
+            title="Loading today"
+            detail="Fetching live schedule and attendance data."
+          />
+        ))}
+      {activeView === "schedule" &&
+        (schedule && viewingWeek ? (
           <ScheduleBuilder
             schedule={schedule}
             employees={employees ?? []}
@@ -691,7 +704,11 @@ function RouteComponent() {
                     existingShiftIds,
                   ),
                 });
-                toast.success(existingShiftIds.has(shift.id as Id<"shifts">) ? "Shift updated" : "Shift created");
+                toast.success(
+                  existingShiftIds.has(shift.id as Id<"shifts">)
+                    ? "Shift updated"
+                    : "Shift created",
+                );
               } catch (error) {
                 toast.error(error instanceof Error ? error.message : "Shift save failed");
                 throw error;
@@ -706,18 +723,50 @@ function RouteComponent() {
               toast.success("Shift deleted");
             }}
             onPublishSchedule={async () => {
-              await publishWeek({ locationId: convexLocationId, weekStartDate: schedule.weekStartDate });
+              await publishWeek({
+                locationId: convexLocationId,
+                weekStartDate: schedule.weekStartDate,
+              });
               toast.success("Schedule published");
             }}
           />
         ) : (
-          <DashboardState title="Loading schedule" detail="Fetching the live schedule from Convex." />
-        )
-      )}
+          <DashboardState
+            title="Loading schedule"
+            detail="Fetching the live schedule from Convex."
+          />
+        ))}
       {activeView === "employees" && (
         <EmployeesView
           locationId={effectiveLocationId}
           employees={employees ?? []}
+          positions={locationPositions}
+          onOpenSettings={() => updateSearch({ view: "settings" })}
+          onSaveEmployee={async (employeeId, values) => {
+            await updateEmployee({
+              employeeId: employeeId as Id<"employees">,
+              locationId: convexLocationId,
+              firstName: values.firstName,
+              lastName: values.lastName,
+              email: values.email || undefined,
+              pin: values.pin,
+              role: values.role,
+              defaultPositionId: values.positionId as Id<"positions">,
+            });
+            toast.success("Employee updated");
+          }}
+          onCreateEmployee={async (values) => {
+            await createEmployee({
+              locationId: convexLocationId,
+              firstName: values.firstName,
+              lastName: values.lastName,
+              email: values.email || undefined,
+              pin: values.pin,
+              role: values.role,
+              defaultPositionId: values.positionId as Id<"positions">,
+            });
+            toast.success("Employee created");
+          }}
           onDeactivate={async (employeeId) => {
             await deactivateEmployee({
               locationId: convexLocationId,
@@ -738,9 +787,29 @@ function RouteComponent() {
         <SettingsView
           locationId={effectiveLocationId}
           location={locationSettings ? mapConvexLocation(locationSettings) : activeLocation}
+          positions={locationPositions}
           onSave={async (settings) => {
             await updateSettings({ locationId: convexLocationId, ...settings });
             toast.success("Settings saved");
+          }}
+          onCreatePosition={async (input) => {
+            await createPosition({ locationId: convexLocationId, ...input });
+            toast.success(`Added ${input.name}`);
+          }}
+          onUpdatePosition={async (positionId, input) => {
+            await updatePosition({
+              locationId: convexLocationId,
+              positionId: positionId as Id<"positions">,
+              ...input,
+            });
+            toast.success("Position updated");
+          }}
+          onRemovePosition={async (positionId) => {
+            await deactivatePosition({
+              locationId: convexLocationId,
+              positionId: positionId as Id<"positions">,
+            });
+            toast.success("Position removed");
           }}
         />
       )}

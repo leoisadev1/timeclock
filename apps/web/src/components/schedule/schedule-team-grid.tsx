@@ -103,7 +103,9 @@ export function ScheduleTeamGrid({
             <CircleIcon className="size-4 fill-[#6f6a5f] text-[#6f6a5f]" />
             <div>
               <p className="text-sm font-semibold text-[#2d1b4f]">Open shifts ({openShiftCount})</p>
-              <p className="text-xs tabular-nums text-[#767167]">{openShiftHours(shifts).toFixed(2)} Hrs</p>
+              <p className="text-xs tabular-nums text-[#767167]">
+                {openShiftHours(shifts).toFixed(2)} hours need coverage
+              </p>
             </div>
           </div>
           {SCHEDULE_DAYS.map((day) => {

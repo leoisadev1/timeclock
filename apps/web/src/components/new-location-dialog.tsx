@@ -29,7 +29,12 @@ interface NewLocationDialogProps {
   onCreate: (input: NewLocationInput) => Promise<void>;
 }
 
-export function NewLocationDialog({ open, pending = false, onClose, onCreate }: NewLocationDialogProps) {
+export function NewLocationDialog({
+  open,
+  pending = false,
+  onClose,
+  onCreate,
+}: NewLocationDialogProps) {
   const formId = useId();
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
@@ -75,10 +80,10 @@ export function NewLocationDialog({ open, pending = false, onClose, onCreate }: 
       >
         <header className="relative border-b border-border px-5 pt-5 pb-4">
           <h2 id="new-location-dialog-title" className="pr-10 text-lg font-semibold tracking-tight">
-            New location
+            Add location
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Adds a site with default hours and positions for your team.
+            Create a workplace with default hours and job labels for your team.
           </p>
           <Button
             type="button"
@@ -138,11 +143,22 @@ export function NewLocationDialog({ open, pending = false, onClose, onCreate }: 
         </div>
 
         <footer className="flex justify-end gap-2 border-t border-border bg-card/95 px-5 py-4 backdrop-blur-sm">
-          <Button type="button" variant="outline" disabled={pending} onClick={onClose} className="motion-product">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={onClose}
+            className="motion-product"
+          >
             Cancel
           </Button>
-          <Button type="submit" form={formId} disabled={pending || !name.trim() || !address.trim()} className="motion-product">
-            {pending ? "Creating…" : "Create location"}
+          <Button
+            type="submit"
+            form={formId}
+            disabled={pending || !name.trim() || !address.trim()}
+            className="motion-product"
+          >
+            {pending ? "Creating…" : "Add location"}
           </Button>
         </footer>
       </form>

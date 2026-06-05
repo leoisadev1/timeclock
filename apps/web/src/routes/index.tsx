@@ -2,12 +2,7 @@ import { AppLogo } from "@/components/app-logo";
 import { api } from "@timeclock/backend/convex/_generated/api";
 import { Badge } from "@timeclock/ui/components/badge";
 import { Button } from "@timeclock/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@timeclock/ui/components/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@timeclock/ui/components/card";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -22,8 +17,7 @@ export const Route = createFileRoute("/")({
   component: HomeComponent,
 });
 
-const panelClass =
-  "rounded-xl bg-card shadow-sm ring-1 ring-border text-sm text-foreground";
+const panelClass = "rounded-xl bg-card shadow-sm ring-1 ring-border text-sm text-foreground";
 
 function HomeComponent() {
   const status = useQuery(api.demo.getStatus);
@@ -42,7 +36,7 @@ function HomeComponent() {
             <span className="text-sm font-semibold text-foreground">Timeclock</span>
           </div>
           <Badge tone="primary" className="ml-auto shrink-0">
-            Hackathon MVP
+            Demo app
           </Badge>
         </div>
       </header>
@@ -50,35 +44,35 @@ function HomeComponent() {
       <main className="mx-auto max-w-4xl space-y-8 px-6 py-10">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Scheduling &amp; attendance
+            Run schedules and timecards in one place
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Multi-location clock-in, live attendance, schedule builder, and timecard reports for
-            hourly restaurant teams.
+            Build the weekly schedule, help employees clock in, and check actual hours for each
+            restaurant location.
           </p>
         </div>
 
         <section className="grid gap-4 sm:grid-cols-3">
           <EntryCard
             icon={Building2Icon}
-            title="Manager workspace"
-            description="Today dashboard, schedule builder, employee roster, reports, and settings."
-            action="Open dashboard"
+            title="Manager dashboard"
+            description="See today's attendance, build the schedule, manage employees, and review timecards."
+            action="Open manager view"
             to="/dashboard"
             primary
           />
           <EntryCard
             icon={UserRoundIcon}
-            title="Employee portal"
-            description="Sign in with a 4-digit PIN, view your published shifts, punch in or out."
-            action="Employee sign in"
+            title="Employee clock-in"
+            description="Employees use a 4-digit PIN to view shifts, clock in, take breaks, and clock out."
+            action="Open employee view"
             to="/employee"
           />
           <EntryCard
             icon={MonitorIcon}
-            title="Station kiosk"
-            description="Shared clock-in station — unlock, select location, enter PIN, punch."
-            action="Launch station"
+            title="Clock-in station"
+            description="A shared workplace screen for employees to enter their PIN and record time."
+            action="Open station"
             to="/station"
           />
         </section>
@@ -86,18 +80,18 @@ function HomeComponent() {
         <section className="grid gap-4 lg:grid-cols-[1fr_280px]">
           <Card className={`${panelClass} gap-0 py-0`}>
             <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 border-b border-border py-4">
-              <CardTitle className="text-sm font-semibold">Demo setup</CardTitle>
+              <CardTitle className="text-sm font-semibold">Sample company</CardTitle>
               {isLoading ? (
-                <span className="text-xs text-muted-foreground">Connecting...</span>
+                <span className="text-xs text-muted-foreground">Checking setup...</span>
               ) : isSeeded ? (
                 <span className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2Icon className="size-3.5" />
-                  Database seeded
+                  Ready to demo
                 </span>
               ) : (
                 <span className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
                   <span className="size-1.5 rounded-full bg-amber-500" />
-                  Not seeded
+                  Needs setup
                 </span>
               )}
             </CardHeader>
@@ -106,10 +100,10 @@ function HomeComponent() {
               {!isLoading && !isSeeded && (
                 <div className="space-y-3">
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    Create a sample company with two locations, nineteen employees, this week&apos;s
-                    schedule, and today&apos;s timecards.
+                    Create two restaurant locations with employees, a weekly schedule, and a few
+                    timecards so the app has real-looking data.
                   </p>
-                  <Button onClick={() => bootstrapMutation({})}>Bootstrap demo data</Button>
+                  <Button onClick={() => bootstrapMutation({})}>Create sample company</Button>
                 </div>
               )}
 
@@ -135,7 +129,7 @@ function HomeComponent() {
                   {demoLogin.employeePins.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Employee PINs
+                        Try these employee PINs
                       </p>
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
                         {demoLogin.employeePins.map((emp) => (
@@ -147,7 +141,9 @@ function HomeComponent() {
                             <span className="truncate text-xs font-medium text-foreground">
                               {emp.name}
                             </span>
-                            <span className="font-mono text-sm font-bold text-primary">{emp.pin}</span>
+                            <span className="font-mono text-sm font-bold text-primary">
+                              {emp.pin}
+                            </span>
                           </Link>
                         ))}
                       </div>
@@ -160,18 +156,21 @@ function HomeComponent() {
 
           <Card className={`${panelClass} gap-0 py-0`}>
             <CardHeader className="border-b border-border py-4">
-              <CardTitle className="text-sm font-semibold">Demo walkthrough</CardTitle>
+              <CardTitle className="text-sm font-semibold">Simple walkthrough</CardTitle>
             </CardHeader>
             <CardContent className="py-5">
               <ol className="space-y-3">
                 {[
-                  "Bootstrap demo data above",
+                  "Create the sample company",
                   "Open the manager dashboard",
                   "Build and publish next week's schedule",
-                  "Employee clocks in via PIN portal or station",
-                  "Manager reviews Today dashboard and reports",
+                  "Clock in as an employee with a PIN",
+                  "Review today's attendance and timecard reports",
                 ].map((text, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm leading-relaxed text-muted-foreground">
+                  <li
+                    key={i}
+                    className="flex items-start gap-3 text-sm leading-relaxed text-muted-foreground"
+                  >
                     <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
                       {i + 1}
                     </span>
@@ -205,9 +204,7 @@ function EntryCard({
   return (
     <div
       className={`group flex flex-col gap-4 rounded-xl p-5 shadow-sm ring-1 transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-        primary
-          ? "bg-primary text-white ring-primary/40"
-          : "bg-card text-foreground ring-border"
+        primary ? "bg-primary text-white ring-primary/40" : "bg-card text-foreground ring-border"
       }`}
     >
       <div
@@ -243,10 +240,20 @@ function EntryCard({
   );
 }
 
-function CredentialCard({ label, email, password }: { label: string; email: string; password: string }) {
+function CredentialCard({
+  label,
+  email,
+  password,
+}: {
+  label: string;
+  email: string;
+  password: string;
+}) {
   return (
     <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
       <div className="space-y-1 font-mono text-xs">
         <div className="flex min-w-0 gap-2">
           <span className="w-14 shrink-0 text-muted-foreground">email</span>

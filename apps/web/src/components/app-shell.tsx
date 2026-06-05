@@ -30,7 +30,11 @@ interface AppShellProps {
   locationId: LocationId;
   onLocationChange: (locationId: LocationId) => void;
   onViewChange: (view: ManagerView) => void;
-  onCreateLocation?: (input: { name: string; address: string; timezone: string }) => Promise<LocationId | void>;
+  onCreateLocation?: (input: {
+    name: string;
+    address: string;
+    timezone: string;
+  }) => Promise<LocationId | void>;
   createLocationPending?: boolean;
   children: ReactNode;
 }
@@ -97,20 +101,20 @@ export function AppShell({
             className="motion-product motion-press flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground/50 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           >
             <UserRoundIcon className="size-4 shrink-0" strokeWidth={1.8} />
-            Employee portal
+            Employee clock-in
           </Link>
           <Link
             to="/station"
             className="motion-product motion-press flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground/50 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           >
             <MonitorIcon className="size-4 shrink-0" strokeWidth={1.8} />
-            Station kiosk
+            Clock-in station
           </Link>
           <Link
             to="/"
             className="motion-product flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs text-sidebar-foreground/30 hover:text-sidebar-foreground/60"
           >
-            Back to home
+            Demo home
           </Link>
         </div>
       </aside>
@@ -121,7 +125,9 @@ export function AppShell({
         <header className="flex h-14 shrink-0 items-center justify-between bg-sidebar px-4 lg:hidden">
           <div className="flex items-center gap-2.5">
             <AppLogo className="size-9" />
-            <span className="text-lg font-bold tracking-tight text-sidebar-foreground">Timeclock</span>
+            <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
+              Timeclock
+            </span>
           </div>
           <div className="w-48">
             <LocationSwitcher

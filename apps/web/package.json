@@ -8,9 +8,6 @@
     "dev": "portless run --name timeclock vite dev"
   },
   "dependencies": {
-    "@timeclock/backend": "workspace:*",
-    "@timeclock/env": "workspace:*",
-    "@timeclock/ui": "workspace:*",
     "@clerk/tanstack-react-start": "^1.1.3",
     "@convex-dev/react-query": "^0.1.0",
     "@tailwindcss/vite": "^4.2.2",
@@ -18,9 +15,13 @@
     "@tanstack/react-router": "^1.168.22",
     "@tanstack/react-router-ssr-query": "^1.166.11",
     "@tanstack/react-start": "^1.167.41",
+    "@timeclock/backend": "workspace:*",
+    "@timeclock/env": "workspace:*",
+    "@timeclock/ui": "workspace:*",
     "convex": "catalog:",
     "dotenv": "catalog:",
     "lucide-react": "^1.8.0",
+    "motion": "^12.40.0",
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

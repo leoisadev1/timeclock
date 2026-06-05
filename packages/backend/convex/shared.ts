@@ -12,7 +12,10 @@ export type ReaderCtx = QueryCtx | MutationCtx;
 export type PunchSource = "station" | "employee_web" | "manager_edit";
 export type AttendanceStatus = Doc<"timecards">["attendanceStatus"];
 
-export function error(code: string, message: string): ConvexError<{ code: string; message: string }> {
+export function error(
+  code: string,
+  message: string,
+): ConvexError<{ code: string; message: string }> {
   return new ConvexError({ code, message });
 }
 
@@ -48,9 +51,17 @@ export async function getCurrentEmployee(ctx: ReaderCtx): Promise<Doc<"employees
   }
 
   if (identity.email) {
+    const normalizedEmail = identity.email.trim().toLowerCase();
+    const byNormalizedEmail = await ctx.db
+      .query("employees")
+      .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
+      .unique();
+    if (byNormalizedEmail) {
+      return byNormalizedEmail;
+    }
     return await ctx.db
       .query("employees")
-      .withIndex("by_email", (q) => q.eq("email", identity.email ?? ""))
+      .withIndex("by_email", (q) => q.eq("email", identity.email))
       .unique();
   }
 
@@ -182,7 +193,11 @@ function getTimezoneOffset(timestamp: number, timezone: string): number {
   return localAsUtc - timestamp;
 }
 
-export function zonedTimestamp(date: string, minutesAfterMidnight: number, timezone: string): number {
+export function zonedTimestamp(
+  date: string,
+  minutesAfterMidnight: number,
+  timezone: string,
+): number {
   const [year, month, day] = date.split("-").map(Number);
   const hour = Math.floor(minutesAfterMidnight / 60);
   const minute = minutesAfterMidnight % 60;
@@ -204,7 +219,10 @@ export function roundHours(hours: number): number {
   return Math.round(hours * 100) / 100;
 }
 
-export function classifyAttendance(clockInAt: number, shiftStartAt: number | null): AttendanceStatus {
+export function classifyAttendance(
+  clockInAt: number,
+  shiftStartAt: number | null,
+): AttendanceStatus {
   if (shiftStartAt === null) {
     return "unscheduled";
   }

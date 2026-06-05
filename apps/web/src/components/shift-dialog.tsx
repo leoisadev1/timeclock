@@ -16,7 +16,14 @@ import {
   ShiftSummaryStrip,
 } from "./shift-form-primitives";
 
-const defaultPositions: Position[] = ["Manager", "Shift Lead", "Barista", "Cashier", "Cook", "Server"];
+const defaultPositions: Position[] = [
+  "Manager",
+  "Shift Lead",
+  "Barista",
+  "Cashier",
+  "Cook",
+  "Server",
+];
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 interface ShiftDialogProps {
@@ -28,7 +35,14 @@ interface ShiftDialogProps {
   onSave: (shift: Shift) => void;
 }
 
-export function ShiftDialog({ open, shift, employees, positions: positionOptions, onClose, onSave }: ShiftDialogProps) {
+export function ShiftDialog({
+  open,
+  shift,
+  employees,
+  positions: positionOptions,
+  onClose,
+  onSave,
+}: ShiftDialogProps) {
   if (!open) {
     return null;
   }
@@ -99,10 +113,15 @@ function ShiftDialogForm({
         className="motion-product flex max-h-[min(90vh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-card shadow-2xl ring-1 ring-border animate-in fade-in-0 zoom-in-95 duration-200"
       >
         <header className="relative shrink-0 border-b border-border/50 px-5 pt-5 pb-4">
-          <h2 id="shift-dialog-title" className="pr-10 text-lg font-semibold tracking-tight text-foreground">
+          <h2
+            id="shift-dialog-title"
+            className="pr-10 text-lg font-semibold tracking-tight text-foreground"
+          >
             {title}
           </h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">Schedule a shift for this location</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Set the day, time, employee, and position for this shift.
+          </p>
           <Button
             type="button"
             variant="ghost"
@@ -150,7 +169,7 @@ function ShiftDialogForm({
             </div>
           </ShiftFormSection>
 
-          <ShiftFormSection title="Who">
+          <ShiftFormSection title="Staffing">
             <div className="grid gap-3 sm:grid-cols-2">
               <ShiftField label="Employee" htmlFor="shift-employee">
                 <ShiftSelect
@@ -200,7 +219,7 @@ function ShiftDialogForm({
             </div>
           </ShiftFormSection>
 
-          <ShiftFormSection title="Break & options">
+          <ShiftFormSection title="Breaks">
             <div className="grid gap-4 sm:grid-cols-2 sm:items-end">
               <ShiftField label="Unpaid break minutes" htmlFor="shift-break">
                 <Input
@@ -243,7 +262,7 @@ function ShiftDialogForm({
               onChange={(event) =>
                 setDraft((current) => ({ ...current, notes: event.target.value }))
               }
-              placeholder="Close, prep, training, overnight handoff..."
+              placeholder="Closing tasks, prep notes, training, handoff..."
               className="motion-product min-h-[88px] resize-y text-sm"
             />
           </ShiftFormSection>
@@ -255,7 +274,7 @@ function ShiftDialogForm({
             >
               <Badge tone="warning">{warning}</Badge>
               <span className="text-amber-800/90 dark:text-amber-200/90">
-                Review this shift before saving.
+                This shift needs review before you save it.
               </span>
             </div>
           ) : null}

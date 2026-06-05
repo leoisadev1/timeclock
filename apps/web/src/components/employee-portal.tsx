@@ -84,9 +84,7 @@ function PinKeypad({
           <div
             key={i}
             className={`flex size-12 items-center justify-center rounded-2xl text-xl font-mono ring-2 transition-[background-color,ring-color] duration-150 ${
-              i < pin.length
-                ? "bg-primary/10 text-primary ring-primary"
-                : "bg-muted/30 ring-border"
+              i < pin.length ? "bg-primary/10 text-primary ring-primary" : "bg-muted/30 ring-border"
             }`}
           >
             {i < pin.length ? "●" : ""}
@@ -135,7 +133,7 @@ function DemoHints({ onSelect }: { onSelect: (pin: string) => void }) {
 
   return (
     <div className="mt-3 grid gap-1.5">
-      <p className="text-xs text-muted-foreground">Demo employees:</p>
+      <p className="text-xs text-muted-foreground">Try a sample PIN:</p>
       <div className="flex flex-wrap gap-1">
         {demoLogin.employeePins.slice(0, 4).map((emp) => (
           <button
@@ -162,9 +160,7 @@ function DemoHints({ onSelect }: { onSelect: (pin: string) => void }) {
 
 // ─── Status helpers ────────────────────────────────────────────────────────
 
-function convexStatusToLocal(
-  status: "clocked_in" | "on_break" | "clocked_out",
-): TimecardStatus {
+function convexStatusToLocal(status: "clocked_in" | "on_break" | "clocked_out"): TimecardStatus {
   if (status === "clocked_in") return "clocked-in";
   if (status === "on_break") return "on-break";
   return "clocked-out";
@@ -244,7 +240,7 @@ function ConvexWorkspace({
       } else {
         await clockOutMutation({ employeeId: employee.id, source: "employee_web" });
       }
-      toast.success(`${action.replace("-", " ")} recorded`);
+      toast.success(`${action.replace("-", " ")} saved`);
     } catch {
       toast.error("Action failed. Please try again.");
     }
@@ -277,7 +273,9 @@ function ConvexWorkspace({
           )}
           <div>
             <h2 className="text-lg font-semibold">{employee.displayName}</h2>
-            <p className="text-xs text-muted-foreground">{employee.positionName ?? employee.role}</p>
+            <p className="text-xs text-muted-foreground">
+              {employee.positionName ?? employee.role}
+            </p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -300,7 +298,7 @@ function ConvexWorkspace({
       <div className="grid gap-4 xl:grid-cols-2">
         <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border">
           <div className="bg-muted/30 px-3 py-2.5">
-            <h2 className="text-sm font-medium">Today's events</h2>
+            <h2 className="text-sm font-medium">Today's punches</h2>
           </div>
           <div className="divide-y divide-border/60">
             {todayEvents.length ? (
@@ -321,13 +319,13 @@ function ConvexWorkspace({
                 </div>
               ))
             ) : (
-              <p className="px-3 py-3 text-xs text-muted-foreground">No events yet today.</p>
+              <p className="px-3 py-3 text-xs text-muted-foreground">No punches yet today.</p>
             )}
           </div>
         </div>
         <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border">
           <div className="bg-muted/30 px-3 py-2.5">
-            <h2 className="text-sm font-medium">Recent history</h2>
+            <h2 className="text-sm font-medium">Today's timecards</h2>
           </div>
           <div className="divide-y divide-border/60">
             {todayTimecards.length ? (
@@ -356,7 +354,9 @@ function ConvexWorkspace({
                 </div>
               ))
             ) : (
-              <p className="px-3 py-3 text-xs text-muted-foreground">No timecards today.</p>
+              <p className="px-3 py-3 text-xs text-muted-foreground">
+                No completed timecards today.
+              </p>
             )}
           </div>
         </div>
@@ -413,7 +413,7 @@ function DemoWorkspace({
         <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border">
           <div className="flex items-center gap-2 bg-muted/30 px-3 py-2.5">
             <CalendarDaysIcon className="size-4 text-muted-foreground" strokeWidth={1.8} />
-            <h2 className="text-sm font-medium">Published schedule</h2>
+            <h2 className="text-sm font-medium">Your schedule</h2>
           </div>
           <div className="divide-y divide-border/60">
             {portal.assignedShifts.map((shift) => {
@@ -443,11 +443,13 @@ function DemoWorkspace({
                 <p className="text-xs">
                   {shift.start} – {shift.end} · {shift.position}
                 </p>
-                <Badge tone="warning">Open read-only</Badge>
+                <Badge tone="warning">Open shift</Badge>
               </div>
             ))}
             {portal.assignedShifts.length === 0 && portal.openShifts.length === 0 ? (
-              <p className="px-3 py-3 text-xs text-muted-foreground">No published shifts found.</p>
+              <p className="px-3 py-3 text-xs text-muted-foreground">
+                No shifts are published for you yet.
+              </p>
             ) : null}
           </div>
         </div>
@@ -455,7 +457,7 @@ function DemoWorkspace({
         <aside className="grid gap-4 content-start">
           <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border">
             <div className="bg-muted/30 px-3 py-2.5">
-              <h2 className="text-sm font-medium">Today's events</h2>
+              <h2 className="text-sm font-medium">Today's punches</h2>
             </div>
             <div className="divide-y divide-border/60">
               {portal.todayEvents.length ? (
@@ -464,16 +466,14 @@ function DemoWorkspace({
                     key={event.id}
                     className="px-3 py-2.5 text-xs transition-colors duration-150 hover:bg-muted/20"
                   >
-                    <p className="font-medium capitalize">
-                      {event.action.replace(/-/g, " ")}
-                    </p>
+                    <p className="font-medium capitalize">{event.action.replace(/-/g, " ")}</p>
                     <p className="text-muted-foreground">
                       {event.time} via {event.source.replace(/_/g, " ")}
                     </p>
                   </div>
                 ))
               ) : (
-                <p className="px-3 py-3 text-xs text-muted-foreground">No events yet today.</p>
+                <p className="px-3 py-3 text-xs text-muted-foreground">No punches yet today.</p>
               )}
             </div>
           </div>
@@ -614,7 +614,10 @@ function PinPanel({
 
   return (
     <div className="rounded-xl bg-card p-4 shadow-sm ring-1 ring-border">
-      <h2 className="text-sm font-semibold tracking-tight">Enter your PIN</h2>
+      <h2 className="text-sm font-semibold tracking-tight">Clock in with your PIN</h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Choose your location, then enter your 4-digit employee PIN.
+      </p>
 
       <div className="mt-3 mb-4">
         <LocationSwitcher
@@ -662,9 +665,7 @@ export function EmployeePortal() {
         .map((l) => ({ id: l.id, name: l.name, isConvex: true as const }))
     : demoLocations.map((l) => ({ id: l.id, name: l.name, isConvex: false as const }));
 
-  const [locationId, setLocationId] = useState<string>(
-    () => locations[0]?.id ?? "loc-downtown",
-  );
+  const [locationId, setLocationId] = useState<string>(() => locations[0]?.id ?? "loc-downtown");
 
   const [session, setSession] = useState<Session | undefined>();
 
@@ -681,10 +682,10 @@ export function EmployeePortal() {
       <div className="mx-auto max-w-5xl px-4 py-6">
         <header className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <Badge tone="primary">Employee web</Badge>
-            <h1 className="mt-2 text-xl font-semibold tracking-tight">Employee Sign In</h1>
+            <Badge tone="primary">Employee view</Badge>
+            <h1 className="mt-2 text-xl font-semibold tracking-tight">Employee clock-in</h1>
             <p className="mt-1 text-xs text-muted-foreground">
-              Sign in with your PIN to clock in, take breaks, and view your schedule.
+              Use your PIN to clock in, take breaks, clock out, and see your published shifts.
             </p>
           </div>
         </header>
@@ -715,13 +716,10 @@ export function EmployeePortal() {
           ) : (
             <div className="grid min-h-80 place-items-center rounded-xl bg-muted/20 p-6 text-center ring-1 ring-border">
               <div>
-                <Clock3Icon
-                  className="mx-auto size-8 text-muted-foreground"
-                  strokeWidth={1.8}
-                />
+                <Clock3Icon className="mx-auto size-8 text-muted-foreground" strokeWidth={1.8} />
                 <p className="mt-3 text-sm font-medium">No employee signed in</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Use a valid active PIN assigned to this location.
+                  Enter the 4-digit PIN for an active employee at this location.
                 </p>
               </div>
             </div>

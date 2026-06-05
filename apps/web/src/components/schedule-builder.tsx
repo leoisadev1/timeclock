@@ -156,14 +156,14 @@ export function ScheduleBuilder({
       <header className="flex flex-wrap items-start justify-between gap-3 lg:hidden">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">Schedule</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Build schedule</h1>
             <Badge tone={schedule.published ? "success" : "warning"}>
               {schedule.published ? "Published" : "Draft"}
             </Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {employees.length} employees · {totalHours.toFixed(1)} scheduled hours ·{" "}
-            {openShifts.length} open shifts
+            {employees.length} active employees · {totalHours.toFixed(1)} scheduled hours ·{" "}
+            {openShifts.length} unassigned shifts
           </p>
         </div>
       </header>
@@ -174,10 +174,10 @@ export function ScheduleBuilder({
             <div className="border-b border-border px-4 py-3">
               <div className="flex items-center gap-2">
                 <TriangleAlertIcon className="size-4 text-amber-600 dark:text-amber-400" />
-                <h2 className="text-sm font-semibold">Warnings</h2>
+                <h2 className="text-sm font-semibold">Shifts to review</h2>
               </div>
               <p className="text-xs text-muted-foreground">
-                {warnings.length} shift {warnings.length === 1 ? "needs" : "need"} attention
+                {warnings.length} shift {warnings.length === 1 ? "needs" : "need"} review
               </p>
             </div>
             <div className="divide-y divide-border px-1 py-1">

@@ -2,7 +2,6 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import {
-  canManageLocation,
   error,
   getCurrentEmployee,
   getLocationHours,
@@ -12,7 +11,10 @@ import {
   requireRole,
 } from "./shared";
 
-async function locationReadModel(ctx: Parameters<typeof getLocationHours>[0], locationId: Id<"locations">) {
+async function locationReadModel(
+  ctx: Parameters<typeof getLocationHours>[0],
+  locationId: Id<"locations">,
+) {
   const location = await ctx.db.get(locationId);
   if (!location) {
     return null;

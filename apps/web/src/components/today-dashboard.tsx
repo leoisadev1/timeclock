@@ -1,9 +1,9 @@
-import {
-  calculateShiftHours,
-  getEmployees,
-  warningLabel,
-} from "@/lib/timeclock-adapter";
-import type { Employee, TodayDashboard as TodayDashboardData, Timecard } from "@/lib/timeclock-types";
+import { calculateShiftHours, getEmployees, warningLabel } from "@/lib/timeclock-adapter";
+import type {
+  Employee,
+  TodayDashboard as TodayDashboardData,
+  Timecard,
+} from "@/lib/timeclock-types";
 import { Badge } from "@timeclock/ui/components/badge";
 import { Button } from "@timeclock/ui/components/button";
 import {
@@ -25,10 +25,13 @@ interface TodayDashboardProps {
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-const panelClass =
-  "overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border";
+const panelClass = "overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border";
 
-export function TodayDashboard({ data, employees: providedEmployees, onNavigate }: TodayDashboardProps) {
+export function TodayDashboard({
+  data,
+  employees: providedEmployees,
+  onNavigate,
+}: TodayDashboardProps) {
   const todayLabel =
     DAY_LABELS[new Date(`${data.businessDate}T00:00:00.000Z`).getUTCDay()] ?? "Mon";
   const todaysShifts = data.schedule.shifts.filter((shift) => shift.day === todayLabel);
@@ -43,7 +46,7 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               {data.location.name}
             </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight">Today</h1>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight">Today's attendance</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {formatBusinessDate(data.businessDate)} · {totalHours.toFixed(1)}h scheduled
             </p>
@@ -53,7 +56,7 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-40" />
               <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
             </span>
-            Live
+            Updating
           </div>
         </div>
 
@@ -61,7 +64,7 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
           <StatCell
             label="Published shifts"
             value={todaysShifts.length}
-            detail={`${totalHours.toFixed(1)}h on roster`}
+            detail={`${totalHours.toFixed(1)}h scheduled today`}
             icon={Clock3Icon}
           />
           <StatCell
@@ -74,14 +77,14 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
           <StatCell
             label="On break"
             value={data.onBreak.length}
-            detail="Away from floor"
+            detail="Taking a break"
             icon={CoffeeIcon}
             accent="warning"
           />
           <StatCell
             label="Exceptions"
             value={data.lateOrNoShow.length + data.unscheduledClockIns.length}
-            detail="Needs review"
+            detail="Late, missing, or unscheduled"
             icon={AlertTriangleIcon}
             accent="danger"
           />
@@ -91,9 +94,9 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
       <section className="grid animate-in fade-in-0 slide-in-from-bottom-1 gap-4 duration-200 fill-mode-both delay-75 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)]">
         <div className={`min-w-0 ${panelClass}`}>
           <div className="flex items-center justify-between bg-muted/30 px-4 py-3">
-            <h2 className="text-sm font-semibold">Schedule and attendance</h2>
+            <h2 className="text-sm font-semibold">Today's schedule</h2>
             <Button variant="outline" size="sm" onClick={() => onNavigate("schedule")}>
-              Schedule <ArrowRightIcon />
+              Edit schedule <ArrowRightIcon />
             </Button>
           </div>
           <div className="grid divide-y divide-border/60">
@@ -135,9 +138,7 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
                       {shift.overnight ? <Badge tone="info">Overnight</Badge> : null}
                       {warning ? <Badge tone="warning">{warning}</Badge> : null}
                       {card?.attendance === "late" ? <Badge tone="danger">Late</Badge> : null}
-                      {!card && employee ? (
-                        <Badge tone="danger">No show watch</Badge>
-                      ) : null}
+                      {!card && employee ? <Badge tone="danger">No clock-in yet</Badge> : null}
                     </div>
                   </div>
                   <StatusBadge timecard={card} hasEmployee={Boolean(employee)} />
@@ -148,13 +149,13 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
         </div>
 
         <aside className="grid gap-4">
-          <StatusRail title="Scheduled, not clocked in" icon={UserMinusIcon}>
+          <StatusRail title="Not clocked in yet" icon={UserMinusIcon}>
             {data.scheduledNotClockedIn.length ? (
               data.scheduledNotClockedIn.map((employee) => (
                 <PersonLine key={employee.id} name={employee.name} detail={employee.position} />
               ))
             ) : (
-              <EmptyLine label="All scheduled employees have activity." />
+              <EmptyLine label="Everyone scheduled today has clocked in or checked out." />
             )}
           </StatusRail>
 
@@ -175,10 +176,10 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
             <h2 className="text-sm font-semibold">Quick links</h2>
             <div className="mt-3 grid gap-2">
               <Button variant="outline" onClick={() => onNavigate("schedule")}>
-                Review next week
+                Build schedule
               </Button>
               <Button variant="outline" onClick={() => onNavigate("reports")}>
-                Open reports
+                Review timecards
               </Button>
             </div>
           </div>

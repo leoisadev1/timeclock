@@ -23,9 +23,9 @@ export function ReportsView({
     <div className="grid gap-5">
       <header className="flex animate-in fade-in-0 flex-wrap items-start justify-between gap-3 duration-200">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Reports</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Timecard reports</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Timesheet detail and scheduled-versus-actual variance.
+            Compare scheduled hours with the time employees actually worked.
           </p>
         </div>
         <div className="flex gap-1 rounded-full bg-muted p-1 ring-1 ring-border">
@@ -52,7 +52,7 @@ export function ReportsView({
         <ReportStat label="Scheduled" value={`${sum(rows, "scheduledHours").toFixed(1)}h`} />
         <ReportStat label="Actual" value={`${sum(rows, "actualHours").toFixed(1)}h`} />
         <ReportStat
-          label="Variance"
+          label="Difference"
           value={`${sum(rows, "variance") > 0 ? "+" : ""}${sum(rows, "variance").toFixed(1)}h`}
           variance={sum(rows, "variance")}
         />
@@ -67,7 +67,7 @@ export function ReportsView({
                 <th className="px-4 py-3 text-xs font-semibold">Employee</th>
                 <th className="px-4 py-3 text-xs font-semibold">Scheduled</th>
                 <th className="px-4 py-3 text-xs font-semibold">Actual</th>
-                <th className="px-4 py-3 text-xs font-semibold">Variance</th>
+                <th className="px-4 py-3 text-xs font-semibold">Difference</th>
                 <th className="px-4 py-3 text-xs font-semibold">Break</th>
                 <th className="px-4 py-3 text-xs font-semibold">Edited</th>
                 <th className="px-4 py-3 text-xs font-semibold">Attendance</th>
@@ -91,15 +91,18 @@ export function ReportsView({
                   </td>
                   <td className="px-4 py-3 tabular-nums">{row.scheduledHours.toFixed(1)}h</td>
                   <td className="px-4 py-3 tabular-nums">{row.actualHours.toFixed(1)}h</td>
-                  <td className={`px-4 py-3 tabular-nums font-semibold ${varianceClass(row.variance)}`}>
-                    {row.variance > 0 ? "+" : ""}{row.variance.toFixed(1)}h
+                  <td
+                    className={`px-4 py-3 tabular-nums font-semibold ${varianceClass(row.variance)}`}
+                  >
+                    {row.variance > 0 ? "+" : ""}
+                    {row.variance.toFixed(1)}h
                   </td>
                   <td className="px-4 py-3 tabular-nums">{row.breakHours.toFixed(1)}h</td>
                   <td className="px-4 py-3">
                     {row.edited ? (
                       <Badge tone="warning">Edited</Badge>
                     ) : (
-                      <Badge tone="neutral">Clean</Badge>
+                      <Badge tone="neutral">Not edited</Badge>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -120,7 +123,7 @@ export function ReportsView({
                           </Badge>
                         ))
                       ) : (
-                        <Badge tone="neutral">No events</Badge>
+                        <Badge tone="neutral">No punches</Badge>
                       )}
                     </div>
                   </td>

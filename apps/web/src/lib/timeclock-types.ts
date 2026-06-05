@@ -20,6 +20,13 @@ export interface Location {
   active: boolean;
 }
 
+export interface LocationPosition {
+  id: string;
+  name: string;
+  color: string;
+  active: boolean;
+}
+
 export interface Employee {
   id: EmployeeId;
   name: string;
@@ -29,9 +36,12 @@ export interface Employee {
   pin: string;
   role: AppRole;
   position: Position;
+  positionId?: string;
   active: boolean;
   assignedLocationIds: LocationId[];
   email?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 export interface Shift {

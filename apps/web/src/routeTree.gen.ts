@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as StationRouteImport } from './routes/station'
 import { Route as EmployeeRouteImport } from './routes/employee'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthSsoCallbackRouteImport } from './routes/auth.sso-callback'
 
 const StationRoute = StationRouteImport.update({
   id: '/station',
@@ -29,41 +31,77 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthSsoCallbackRoute = AuthSsoCallbackRouteImport.update({
+  id: '/sso-callback',
+  path: '/sso-callback',
+  getParentRoute: () => AuthRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/employee': typeof EmployeeRoute
   '/station': typeof StationRoute
+  '/auth/sso-callback': typeof AuthSsoCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/employee': typeof EmployeeRoute
   '/station': typeof StationRoute
+  '/auth/sso-callback': typeof AuthSsoCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/employee': typeof EmployeeRoute
   '/station': typeof StationRoute
+  '/auth/sso-callback': typeof AuthSsoCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/employee' | '/station'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/employee'
+    | '/station'
+    | '/auth/sso-callback'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/employee' | '/station'
-  id: '__root__' | '/' | '/dashboard' | '/employee' | '/station'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/employee'
+    | '/station'
+    | '/auth/sso-callback'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/employee'
+    | '/station'
+    | '/auth/sso-callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   EmployeeRoute: typeof EmployeeRoute
   StationRoute: typeof StationRoute
@@ -92,6 +130,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -99,11 +144,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/sso-callback': {
+      id: '/auth/sso-callback'
+      path: '/sso-callback'
+      fullPath: '/auth/sso-callback'
+      preLoaderRoute: typeof AuthSsoCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
   }
 }
 
+interface AuthRouteChildren {
+  AuthSsoCallbackRoute: typeof AuthSsoCallbackRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthSsoCallbackRoute: AuthSsoCallbackRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRouteWithChildren,
   DashboardRoute: DashboardRoute,
   EmployeeRoute: EmployeeRoute,
   StationRoute: StationRoute,

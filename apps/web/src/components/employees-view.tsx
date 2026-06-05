@@ -1,22 +1,21 @@
+import { EmployeeActionsMenu } from "@/components/employees/employee-actions-menu";
+import {
+  EmployeeFormDialog,
+  type EmployeeFormValues,
+} from "@/components/employees/employee-form-dialog";
+import { EmployeePinCell } from "@/components/employees/employee-pin-cell";
 import { EmployeeAvatar } from "@/components/employee-avatar";
+import { DEMO_POSITIONS, positionColorClasses } from "@/lib/location-positions";
 import { getEmployees, getLocations } from "@/lib/timeclock-adapter";
-import type { Employee, LocationId } from "@/lib/timeclock-types";
+import type { Employee, LocationId, LocationPosition } from "@/lib/timeclock-types";
 import { Badge } from "@timeclock/ui/components/badge";
 import { Button } from "@timeclock/ui/components/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@timeclock/ui/components/dropdown-menu";
 import { Input } from "@timeclock/ui/components/input";
-import { Label } from "@timeclock/ui/components/label";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
-  EllipsisVerticalIcon,
-  FilterIcon,
+  EyeIcon,
+  EyeOffIcon,
   PlusIcon,
   SearchIcon,
   UploadIcon,
@@ -25,6 +24,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 type StatusFilter = "all" | "active" | "inactive";
+type DialogMode = "create" | "edit";
 
 const PAGE_SIZE = 20;
 
@@ -46,28 +46,39 @@ function contactEmail(employee: Employee) {
 export function EmployeesView({
   locationId,
   employees: providedEmployees,
+  positions = DEMO_POSITIONS,
   onDeactivate,
+  onSaveEmployee,
+  onCreateEmployee,
+  onOpenSettings,
 }: {
   locationId: LocationId;
   employees?: Employee[];
+  positions?: LocationPosition[];
   onDeactivate?: (employeeId: string) => Promise<void>;
+  onSaveEmployee?: (employeeId: string, values: EmployeeFormValues) => Promise<void>;
+  onCreateEmployee?: (values: EmployeeFormValues) => Promise<void>;
+  onOpenSettings?: () => void;
 }) {
   const allEmployees = providedEmployees ?? getEmployees(locationId);
-  const locationNames = useMemo(
-    () => new Map(getLocations().map((loc) => [loc.id, loc.name])),
-    [],
+  const locationNames = useMemo(() => new Map(getLocations().map((loc) => [loc.id, loc.name])), []);
+  const positionByName = useMemo(
+    () => new Map(positions.map((position) => [position.name, position])),
+    [positions],
   );
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [showPin, setShowPin] = useState(false);
-  const [editing, setEditing] = useState<string | undefined>();
+  const [revealAllPins, setRevealAllPins] = useState(false);
+  const [dialogMode, setDialogMode] = useState<DialogMode | null>(null);
+  const [editingEmployeeId, setEditingEmployeeId] = useState<string | undefined>();
+  const [saving, setSaving] = useState(false);
 
   const editingEmployee =
-    editing && editing !== "new"
-      ? allEmployees.find((employee) => employee.id === editing)
+    editingEmployeeId && dialogMode === "edit"
+      ? allEmployees.find((employee) => employee.id === editingEmployeeId)
       : undefined;
 
   const activeCount = allEmployees.filter((e) => e.active).length;
@@ -90,8 +101,7 @@ export function EmployeesView({
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
   const pageRows = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
-  const allPageSelected =
-    pageRows.length > 0 && pageRows.every((row) => selected.has(row.id));
+  const allPageSelected = pageRows.length > 0 && pageRows.every((row) => selected.has(row.id));
 
   function toggleAllOnPage() {
     setSelected((current) => {
@@ -105,28 +115,65 @@ export function EmployeesView({
     });
   }
 
+  function openCreate() {
+    setDialogMode("create");
+    setEditingEmployeeId(undefined);
+  }
+
+  function openEdit(employeeId: string) {
+    setDialogMode("edit");
+    setEditingEmployeeId(employeeId);
+  }
+
+  function closeDialog() {
+    setDialogMode(null);
+    setEditingEmployeeId(undefined);
+  }
+
+  async function handleSave(values: EmployeeFormValues) {
+    setSaving(true);
+    try {
+      if (dialogMode === "create") {
+        if (onCreateEmployee) {
+          await onCreateEmployee(values);
+        } else {
+          toast.success(`${values.firstName} ${values.lastName} would be created`);
+        }
+      } else if (editingEmployeeId) {
+        if (onSaveEmployee) {
+          await onSaveEmployee(editingEmployeeId, values);
+        } else {
+          toast.success("Employee changes staged");
+        }
+      }
+      closeDialog();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save employee");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="grid gap-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Employees</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Team members</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage roster, roles, and location assignments
+            Keep employee details, roles, PINs, and location access up to date.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => toast.info("Import coming soon")}>
-            <UploadIcon />
-            Import
-          </Button>
           <Button
-            onClick={() => {
-              setEditing("new");
-              toast.info("Create employee is staged for backend wiring.");
-            }}
+            variant="outline"
+            onClick={() => toast.info("Employee import is not available yet")}
           >
+            <UploadIcon />
+            Import list
+          </Button>
+          <Button onClick={openCreate}>
             <PlusIcon />
-            New member
+            Add employee
           </Button>
         </div>
       </header>
@@ -168,13 +215,17 @@ export function EmployeesView({
                   setSearch(event.target.value);
                   setPage(0);
                 }}
-                placeholder="Search members..."
+                placeholder="Search employees..."
                 className="pl-9"
               />
             </div>
-            <Button variant="outline" size="sm" onClick={() => setShowPin((v) => !v)}>
-              <FilterIcon />
-              {showPin ? "Hide PINs" : "Show PINs"}
+            <Button
+              variant={revealAllPins ? "default" : "outline"}
+              size="sm"
+              onClick={() => setRevealAllPins((value) => !value)}
+            >
+              {revealAllPins ? <EyeOffIcon /> : <EyeIcon />}
+              {revealAllPins ? "Hide PINs" : "Show PINs"}
             </Button>
           </div>
         </div>
@@ -192,7 +243,7 @@ export function EmployeesView({
                     aria-label="Select all on page"
                   />
                 </th>
-                <th className="px-4 py-3">Member</th>
+                <th className="px-4 py-3">Employee</th>
                 <th className="px-4 py-3">Contact</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Position</th>
@@ -206,6 +257,9 @@ export function EmployeesView({
                 const locations = employee.assignedLocationIds
                   .map((id) => locationNames.get(id))
                   .filter(Boolean) as string[];
+                const positionMeta =
+                  positionByName.get(employee.position) ??
+                  positions.find((position) => position.id === employee.positionId);
 
                 return (
                   <tr
@@ -257,46 +311,43 @@ export function EmployeesView({
                         {employee.active ? "Active" : "Inactive"}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-foreground">{employee.position}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-2 text-foreground">
+                        {positionMeta ? (
+                          <span
+                            className={`size-2 shrink-0 rounded-full ${positionColorClasses(positionMeta.color).dot}`}
+                          />
+                        ) : null}
+                        {employee.position}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <p className="truncate text-sm text-foreground">
                         {locations[0] ?? "—"}
                         {locations.length > 1 ? ` +${locations.length - 1}` : ""}
                       </p>
                     </td>
-                    <td className="px-4 py-3 font-mono text-sm tabular-nums">
-                      {showPin ? employee.pin : "••••"}
+                    <td className="px-4 py-3">
+                      <EmployeePinCell
+                        pin={employee.pin}
+                        employeeName={employee.name}
+                        revealAll={revealAllPins}
+                      />
                     </td>
                     <td className="px-4 py-3">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                          aria-label={`Actions for ${employee.name}`}
-                        >
-                          <EllipsisVerticalIcon className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setEditing(employee.id)}>
-                            Edit member
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            variant="destructive"
-                            disabled={!employee.active}
-                            onClick={async () => {
-                              if (onDeactivate) {
-                                await onDeactivate(employee.id);
-                                return;
-                              }
-                              toast.warning(
-                                `${employee.name} would be deactivated after backend confirmation.`,
-                              );
-                            }}
-                          >
-                            Deactivate
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <EmployeeActionsMenu
+                        employee={employee}
+                        onEdit={() => openEdit(employee.id)}
+                        onDeactivate={async () => {
+                          if (onDeactivate) {
+                            await onDeactivate(employee.id);
+                            return;
+                          }
+                          toast.warning(
+                            `${employee.name} would be deactivated after backend confirmation.`,
+                          );
+                        }}
+                      />
                     </td>
                   </tr>
                 );
@@ -306,9 +357,9 @@ export function EmployeesView({
 
           {filtered.length === 0 && (
             <div className="px-6 py-12 text-center">
-              <p className="text-sm font-medium text-foreground">No members match your filters</p>
+              <p className="text-sm font-medium text-foreground">No employees match your filters</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Try a different search or status filter.
+                Try clearing the search or changing the status filter.
               </p>
             </div>
           )}
@@ -345,50 +396,23 @@ export function EmployeesView({
         </div>
       </div>
 
-      {editing ? (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm animate-in fade-in-0 duration-150"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setEditing(undefined);
-          }}
-        >
-          <div className="w-full max-w-md animate-in fade-in-0 slide-in-from-bottom-4 rounded-2xl bg-card p-6 shadow-2xl ring-1 ring-border duration-200">
-            <h2 className="mb-3 text-sm font-semibold">
-              {editing === "new" ? "Add employee" : `Edit: ${editingEmployee?.name ?? ""}`}
-            </h2>
-            <div className="grid gap-3 md:grid-cols-3">
-              <label className="grid gap-1">
-                <Label>Name</Label>
-                <Input defaultValue={editing === "new" ? "" : editingEmployee?.name} />
-              </label>
-              <label className="grid gap-1">
-                <Label>Position</Label>
-                <Input defaultValue={editing === "new" ? "" : editingEmployee?.position} />
-              </label>
-              <label className="grid gap-1">
-                <Label>PIN</Label>
-                <Input
-                  maxLength={4}
-                  defaultValue={editing === "new" ? "" : editingEmployee?.pin}
-                />
-              </label>
-            </div>
-            <div className="mt-3 flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditing(undefined)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  setEditing(undefined);
-                  toast.success("Employee changes staged");
-                }}
-              >
-                Save employee
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <EmployeeFormDialog
+        open={dialogMode !== null}
+        mode={dialogMode ?? "edit"}
+        employee={editingEmployee}
+        positions={positions}
+        saving={saving}
+        onClose={closeDialog}
+        onSave={handleSave}
+        onOpenSettings={
+          onOpenSettings
+            ? () => {
+                closeDialog();
+                onOpenSettings();
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }

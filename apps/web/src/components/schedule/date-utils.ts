@@ -51,10 +51,18 @@ export function formatWeekMonthLabel(weekStart: string): string {
   return `${startPart} – ${endPart}`;
 }
 
+/** e.g. "Week of Mon, Jun 8" */
+export function formatWeekOfLabel(weekStart: string): string {
+  const start = parseDate(weekStart);
+  const weekday = start.toLocaleDateString("en-US", { weekday: "short" });
+  const rest = start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return `Week of ${weekday}, ${rest}`;
+}
+
+/** e.g. "Mon 8" for column headers */
 export function formatDayColumnHeader(iso: string, day: ScheduleDay): string {
   const date = parseDate(iso);
-  const dayNum = String(date.getDate()).padStart(2, "0");
-  return `${dayNum} ${day.toUpperCase()}`;
+  return `${day} ${date.getDate()}`;
 }
 
 export function isTodayIso(iso: string): boolean {

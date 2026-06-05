@@ -38,6 +38,14 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         content: "width=device-width, initial-scale=1",
       },
       {
+        name: "color-scheme",
+        content: "dark",
+      },
+      {
+        name: "theme-color",
+        content: "#1a1a1a",
+      },
+      {
         title: "timeclock",
       },
     ],
@@ -80,7 +88,7 @@ function RootDocument() {
   return (
     <ClerkProvider publishableKey={env.VITE_CLERK_PUBLISHABLE_KEY}>
       <ConvexProviderWithClerk client={context.convexQueryClient.convexClient} useAuth={useAuth}>
-        <html lang="en">
+        <html lang="en" className="dark" style={{ colorScheme: "dark" }}>
           <head>
             <HeadContent />
           </head>
