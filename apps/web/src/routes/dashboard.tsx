@@ -11,7 +11,6 @@ import type {
   Location,
   LocationId,
   Position,
-  ReportRow,
   ScheduleWeek,
   Shift,
   TimeEvent,
@@ -21,16 +20,13 @@ import type {
 import { useAuth } from "@clerk/tanstack-react-start";
 import { api } from "@timeclock/backend/convex/_generated/api";
 import type { Id } from "@timeclock/backend/convex/_generated/dataModel";
-import {
-  dashboardSearchParams,
-  defaultManagerView,
-} from "@/lib/dashboard-search";
+import { dashboardSearchParams, defaultManagerView } from "@/lib/dashboard-search";
 import { Button } from "@timeclock/ui/components/button";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { createStandardSchemaV1, useQueryStates } from "nuqs";
 import type { ReactNode } from "react";
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard")({
@@ -65,12 +61,6 @@ type ConvexDashboard = NonNullable<ReturnType<typeof useQuery<typeof api.today.g
 type ConvexWeek = NonNullable<ReturnType<typeof useQuery<typeof api.schedules.getWeek>>>;
 type ConvexEmployees = NonNullable<
   ReturnType<typeof useQuery<typeof api.employees.listByLocation>>
->;
-type ConvexDailyReport = NonNullable<
-  ReturnType<typeof useQuery<typeof api.reports.dailyTimesheet>>
->;
-type ConvexWeeklyReport = NonNullable<
-  ReturnType<typeof useQuery<typeof api.reports.weeklySummary>>
 >;
 
 function minutesToTime(minutes: number): string {
@@ -375,70 +365,6 @@ function mapDashboard(
   };
 }
 
-function reportEmployee(
-  id: string,
-  name: string,
-  role: Employee["role"],
-  position: string | null | undefined,
-  locationId: LocationId,
-  avatarUrl?: string | null,
-): Employee {
-  return {
-    id,
-    name,
-    initials: initials(name),
-    avatarColor: avatarColor(id),
-    avatarUrl: employeeAvatarUrl(id, name, avatarUrl),
-    pin: "0000",
-    role,
-    position: normalizePosition(position),
-    active: true,
-    assignedLocationIds: [locationId],
-  };
-}
-
-function mapDailyReport(report: ConvexDailyReport, locationId: LocationId): ReportRow[] {
-  return report.rows.map((row) => ({
-    employee: reportEmployee(
-      row.employeeId,
-      row.displayName,
-      row.role,
-      row.positionName,
-      locationId,
-      row.avatarUrl,
-    ),
-    scheduledHours: row.scheduledHours,
-    actualHours: row.actualHours,
-    variance: row.varianceHours,
-    breakHours: row.breakMinutes / 60,
-    edited: row.timecards.some((timecard) => timecard.edited),
-    attendance: Array.from(new Set(row.statuses.map(normalizeAttendance))),
-  }));
-}
-
-function mapWeeklyReport(report: ConvexWeeklyReport, locationId: LocationId): ReportRow[] {
-  return report.rows.map((row) => ({
-    employee: reportEmployee(
-      row.employeeId,
-      row.displayName,
-      row.role,
-      null,
-      locationId,
-      row.avatarUrl,
-    ),
-    scheduledHours: row.scheduledHours,
-    actualHours: row.actualHours,
-    variance: row.varianceHours,
-    breakHours: row.breakMinutes / 60,
-    edited: row.editedTimecards > 0,
-    attendance: [
-      ...(row.late > 0 ? (["late"] as AttendanceStatus[]) : []),
-      ...(row.early > 0 ? (["early"] as AttendanceStatus[]) : []),
-      ...(row.unscheduled > 0 ? (["unscheduled"] as AttendanceStatus[]) : []),
-    ],
-  }));
-}
-
 function shiftPayload(
   shift: Shift,
   schedule: ScheduleWeek,
@@ -656,9 +582,7 @@ function RouteComponent() {
   const currentSchedule = currentWeek
     ? mapScheduleWeek(currentWeek, effectiveLocationId)
     : undefined;
-  const mappedViewingWeek = viewingWeek
-    ? mapScheduleWeek(viewingWeek, effectiveLocationId)
-    : null;
+  const mappedViewingWeek = viewingWeek ? mapScheduleWeek(viewingWeek, effectiveLocationId) : null;
   const viewingWeekMatches =
     mappedViewingWeek?.weekStartDate === effectiveViewingWeek &&
     viewingWeek?.weekStartDate === effectiveViewingWeek;
@@ -691,10 +615,7 @@ function RouteComponent() {
     [locationPositions],
   );
   const existingShiftIds = useMemo(
-    () =>
-      new Set(
-        (viewingWeekMatches ? (viewingWeek?.shifts ?? []) : []).map((shift) => shift.id),
-      ),
+    () => new Set((viewingWeekMatches ? (viewingWeek?.shifts ?? []) : []).map((shift) => shift.id)),
     [viewingWeek, viewingWeekMatches],
   );
 
@@ -775,7 +696,11 @@ function RouteComponent() {
                 }
               }}
             >
-              {seedResetPending ? "Resetting..." : isSeeded ? "Reset demo data" : "Seed for my user"}
+              {seedResetPending
+                ? "Resetting..."
+                : isSeeded
+                  ? "Reset demo data"
+                  : "Seed for my user"}
             </Button>
           </div>
         }
@@ -923,8 +848,8 @@ function RouteComponent() {
       {activeView === "reports" && (
         <ReportsView
           locationId={effectiveLocationId}
-          dailyRows={dailyReport ? mapDailyReport(dailyReport, effectiveLocationId) : []}
-          weeklyRows={weeklyReport ? mapWeeklyReport(weeklyReport, effectiveLocationId) : []}
+          dailyReport={dailyReport ?? null}
+          weeklyReport={weeklyReport ?? null}
         />
       )}
       {activeView === "settings" && (

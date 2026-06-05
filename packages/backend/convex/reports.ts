@@ -21,7 +21,9 @@ type TimecardReportRow = {
   attendanceStatus: Doc<"timecards">["attendanceStatus"];
   actualHours: number;
   breakMinutes: number;
+  source: Doc<"timecards">["source"];
   edited: boolean;
+  editNote: string | null;
 };
 
 type DailyReportRow = {
@@ -85,12 +87,12 @@ function actualHours(timecards: Doc<"timecards">[]) {
   );
 }
 
-async function hasEdits(ctx: ReaderCtx, timecardId: Id<"timecards">) {
+async function latestEdit(ctx: ReaderCtx, timecardId: Id<"timecards">) {
   const edits = await ctx.db
     .query("timecardEdits")
     .withIndex("by_timecardId", (q) => q.eq("timecardId", timecardId))
-    .take(1);
-  return edits.length > 0;
+    .take(20);
+  return edits.sort((a, b) => b.editedAt - a.editedAt)[0] ?? null;
 }
 
 async function buildDailyTimesheet(
@@ -124,10 +126,11 @@ async function buildDailyTimesheet(
     const employee = employees.get(employeeId);
     const employeeShifts = shifts.filter((shift) => shift.employeeId === employeeId);
     const employeeTimecards = timecards.filter((timecard) => timecard.employeeId === employeeId);
-    const edited: Id<"timecards">[] = [];
+    const edits = new Map<Id<"timecards">, Doc<"timecardEdits">>();
     for (const timecard of employeeTimecards) {
-      if (await hasEdits(ctx, timecard._id)) {
-        edited.push(timecard._id);
+      const edit = await latestEdit(ctx, timecard._id);
+      if (edit) {
+        edits.set(timecard._id, edit);
       }
     }
     const scheduled = scheduledHours(employeeShifts);
@@ -138,30 +141,46 @@ async function buildDailyTimesheet(
       avatarUrl: employee?.avatarUrl ?? null,
       role: employee?.role ?? "employee",
       positionName:
-        employeeShifts[0] !== undefined ? positions.get(employeeShifts[0].positionId)?.name ?? null : null,
+        employeeShifts[0] !== undefined
+          ? (positions.get(employeeShifts[0].positionId)?.name ?? null)
+          : null,
       scheduledHours: roundHours(scheduled),
       actualHours: roundHours(actual),
       varianceHours: roundHours(actual - scheduled),
-      breakMinutes: employeeTimecards.reduce((total, timecard) => total + timecard.totalBreakMinutes, 0),
+      breakMinutes: employeeTimecards.reduce(
+        (total, timecard) => total + timecard.totalBreakMinutes,
+        0,
+      ),
       statuses: Array.from(new Set(employeeTimecards.map((timecard) => timecard.attendanceStatus))),
-      timecards: employeeTimecards.map((timecard) => ({
-        timecardId: timecard._id,
-        shiftId: timecard.shiftId ?? null,
-        clockInAt: timecard.clockInAt,
-        clockOutAt: timecard.clockOutAt ?? null,
-        status: timecard.status,
-        attendanceStatus: timecard.attendanceStatus,
-        actualHours: roundHours(actualHours([timecard])),
-        breakMinutes: timecard.totalBreakMinutes,
-        edited: edited.includes(timecard._id),
-      })),
-      scheduledShifts: employeeShifts.map((shift) => ({
-        shiftId: shift._id,
-        positionName: positions.get(shift.positionId)?.name ?? "Unknown",
-        startAt: shift.startAt,
-        endAt: shift.endAt,
-        scheduledHours: roundHours(hoursBetween(shift.startAt, shift.endAt, shift.plannedBreakMinutes)),
-      })),
+      timecards: employeeTimecards
+        .sort((a, b) => a.clockInAt - b.clockInAt)
+        .map((timecard) => {
+          const edit = edits.get(timecard._id);
+          return {
+            timecardId: timecard._id,
+            shiftId: timecard.shiftId ?? null,
+            clockInAt: timecard.clockInAt,
+            clockOutAt: timecard.clockOutAt ?? null,
+            status: timecard.status,
+            attendanceStatus: timecard.attendanceStatus,
+            actualHours: roundHours(actualHours([timecard])),
+            breakMinutes: timecard.totalBreakMinutes,
+            source: timecard.source,
+            edited: edit !== undefined,
+            editNote: edit?.note ?? null,
+          };
+        }),
+      scheduledShifts: employeeShifts
+        .sort((a, b) => a.startAt - b.startAt)
+        .map((shift) => ({
+          shiftId: shift._id,
+          positionName: positions.get(shift.positionId)?.name ?? "Unknown",
+          startAt: shift.startAt,
+          endAt: shift.endAt,
+          scheduledHours: roundHours(
+            hoursBetween(shift.startAt, shift.endAt, shift.plannedBreakMinutes),
+          ),
+        })),
     });
   }
 
@@ -182,12 +201,14 @@ async function buildDailyTimesheet(
         0,
       ),
       late: sortedRows.reduce(
-        (total, row) => total + row.timecards.filter((timecard) => timecard.attendanceStatus === "late").length,
+        (total, row) =>
+          total + row.timecards.filter((timecard) => timecard.attendanceStatus === "late").length,
         0,
       ),
       unscheduled: sortedRows.reduce(
         (total, row) =>
-          total + row.timecards.filter((timecard) => timecard.attendanceStatus === "unscheduled").length,
+          total +
+          row.timecards.filter((timecard) => timecard.attendanceStatus === "unscheduled").length,
         0,
       ),
     },
@@ -248,8 +269,12 @@ export const weeklySummary = query({
         existing.scheduledHours += row.scheduledHours;
         existing.actualHours += row.actualHours;
         existing.breakMinutes += row.breakMinutes;
-        existing.late += row.timecards.filter((timecard) => timecard.attendanceStatus === "late").length;
-        existing.early += row.timecards.filter((timecard) => timecard.attendanceStatus === "early").length;
+        existing.late += row.timecards.filter(
+          (timecard) => timecard.attendanceStatus === "late",
+        ).length;
+        existing.early += row.timecards.filter(
+          (timecard) => timecard.attendanceStatus === "early",
+        ).length;
         existing.unscheduled += row.timecards.filter(
           (timecard) => timecard.attendanceStatus === "unscheduled",
         ).length;
