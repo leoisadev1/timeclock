@@ -1,24 +1,37 @@
-import { formatWeekMonthLabel, formatWeekRange } from "@/components/schedule/date-utils";
-import { Badge } from "@timeclock/ui/components/badge";
+import { formatWeekRangeLong } from "@/components/schedule/date-utils";
 import { Button } from "@timeclock/ui/components/button";
 import { Calendar } from "@timeclock/ui/components/calendar";
 import { parseDate } from "@timeclock/ui/components/calendar";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@timeclock/ui/components/dropdown-menu";
+import { cn } from "@timeclock/ui/lib/utils";
+import {
   CalendarIcon,
+  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronUpIcon,
   FilterIcon,
   PlusIcon,
   SendIcon,
   TriangleAlertIcon,
+  WrenchIcon,
 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type ScheduleWeekNavProps = {
   weekStartDate: string;
   isCurrentWeek: boolean;
   warningCount: number;
-  warningTitle?: string;
+  filterCount?: number;
+  publishCount?: number;
   calendarOpen: boolean;
   onCalendarOpenChange: (open: boolean) => void;
   onPreviousWeek: () => void;
@@ -30,11 +43,15 @@ type ScheduleWeekNavProps = {
   published?: boolean;
 };
 
+const toolbarBtn =
+  "h-9 rounded-lg border-border bg-card text-foreground shadow-none hover:bg-muted hover:text-foreground";
+
 export function ScheduleWeekNav({
   weekStartDate,
   isCurrentWeek,
   warningCount,
-  warningTitle,
+  filterCount = 0,
+  publishCount = 0,
   calendarOpen,
   onCalendarOpenChange,
   onPreviousWeek,
@@ -46,6 +63,7 @@ export function ScheduleWeekNav({
   published = false,
 }: ScheduleWeekNavProps) {
   const calendarRef = useRef<HTMLDivElement>(null);
+  const [toolsOpen, setToolsOpen] = useState(false);
 
   useEffect(() => {
     if (!calendarOpen) {
@@ -60,105 +78,169 @@ export function ScheduleWeekNav({
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [calendarOpen, onCalendarOpenChange]);
 
+  const activeFilters = filterCount + (warningCount > 0 ? 1 : 0);
+
   return (
-    <div className="border-b border-[#dedbd1] bg-[#f5f4ef] px-4 py-3 sm:px-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="outline" onClick={onJumpToCurrentWeek}>
+    <div className="border-b border-border bg-muted/25 px-4 py-3 sm:px-5">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onJumpToCurrentWeek}
+          className={toolbarBtn}
+          disabled={isCurrentWeek}
+        >
           Today
         </Button>
 
-        <div className="flex min-w-0 items-center gap-2">
-          <Button
+        <div className="relative flex min-w-0 items-center" ref={calendarRef}>
+          <button
             type="button"
-            variant="outline"
-            size="icon-sm"
-            aria-label="Previous week"
-            onClick={onPreviousWeek}
-            className="shrink-0"
+            onClick={() => onCalendarOpenChange(!calendarOpen)}
+            className="flex h-9 min-w-[11.5rem] max-w-[14rem] items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-primary/40 hover:bg-muted/50 sm:min-w-[13rem]"
+            aria-expanded={calendarOpen}
+            aria-label="Pick week"
           >
-            <ChevronLeftIcon />
-          </Button>
-          <div className="min-w-0 text-center">
-            <p className="truncate text-base font-semibold tracking-tight text-foreground">
-              {formatWeekRange(weekStartDate)}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {formatWeekMonthLabel(weekStartDate)}
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            aria-label="Next week"
-            onClick={onNextWeek}
-            className="shrink-0"
-          >
-            <ChevronRightIcon />
-          </Button>
-        </div>
-
-        <Button type="button" variant="outline" className="min-w-24 justify-between">
-          Week
-          <ChevronRightIcon className="rotate-90" />
-        </Button>
-
-        {warningCount > 0 ? (
-          <span
-            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/10 px-2.5 py-2 text-xs font-medium text-amber-700 ring-1 ring-amber-500/20 dark:text-amber-200"
-            title={warningTitle}
-          >
-            <TriangleAlertIcon className="size-3.5 shrink-0" />
-            {warningCount}
-          </span>
-        ) : null}
-
-        <div className="ml-auto flex items-center justify-end gap-2">
-          <Button type="button" variant="outline">
-            <FilterIcon />
-            Filters
-          </Button>
-          <div className="relative" ref={calendarRef}>
+            <CalendarIcon className="size-4 shrink-0 text-primary" strokeWidth={1.8} />
+            <span className="truncate">{formatWeekRangeLong(weekStartDate)}</span>
+          </button>
+          <div className="ml-1 flex shrink-0 items-center gap-0.5">
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="icon-sm"
-              aria-label="Pick week"
-              aria-expanded={calendarOpen}
-              onClick={() => onCalendarOpenChange(!calendarOpen)}
+              aria-label="Previous week"
+              onClick={onPreviousWeek}
+              className="text-primary hover:bg-primary/10 hover:text-primary"
             >
-              <CalendarIcon />
+              <ChevronLeftIcon />
             </Button>
-            {calendarOpen ? (
-              <div className="absolute right-0 top-full z-30 mt-2 animate-in fade-in-0 zoom-in-95 duration-150">
-                <Calendar
-                  selected={parseDate(weekStartDate)}
-                  defaultMonth={parseDate(weekStartDate)}
-                  onSelect={(date) => {
-                    if (date) {
-                      onPickWeek(date);
-                      onCalendarOpenChange(false);
-                    }
-                  }}
-                />
-              </div>
-            ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Next week"
+              onClick={onNextWeek}
+              className="text-primary hover:bg-primary/10 hover:text-primary"
+            >
+              <ChevronRightIcon />
+            </Button>
           </div>
-          {onAddShift ? (
-            <Button type="button" variant="outline" onClick={onAddShift}>
-              <PlusIcon />
-              Add
-            </Button>
+          {calendarOpen ? (
+            <div className="absolute left-0 top-full z-30 mt-2 animate-in fade-in-0 zoom-in-95 duration-150">
+              <Calendar
+                selected={parseDate(weekStartDate)}
+                defaultMonth={parseDate(weekStartDate)}
+                className="shadow-lg"
+                onSelect={(date) => {
+                  if (date) {
+                    onPickWeek(date);
+                    onCalendarOpenChange(false);
+                  }
+                }}
+              />
+            </div>
           ) : null}
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger className={cn(toolbarBtn, "inline-flex items-center gap-1.5 px-3")}>
+            Week
+            <ChevronDownIcon className="size-3.5 opacity-70" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-36">
+            <DropdownMenuGroup>
+              <DropdownMenuItem disabled>Week</DropdownMenuItem>
+              <DropdownMenuItem disabled>Day</DropdownMenuItem>
+              <DropdownMenuItem disabled>Month</DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger className={cn(toolbarBtn, "inline-flex items-center gap-1.5 px-3")}>
+              <FilterIcon className="size-3.5 opacity-70" />
+              Filters ({activeFilters})
+              <ChevronDownIcon className="size-3.5 opacity-70" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-44">
+              <DropdownMenuLabel>Active filters</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                {warningCount > 0 ? (
+                  <DropdownMenuItem disabled className="gap-2">
+                    <TriangleAlertIcon className="size-3.5 text-amber-400" />
+                    {warningCount} shift {warningCount === 1 ? "warning" : "warnings"}
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem disabled>No warnings</DropdownMenuItem>
+                )}
+                {filterCount > 0 ? (
+                  <DropdownMenuItem disabled>{filterCount} position filters</DropdownMenuItem>
+                ) : null}
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu open={toolsOpen} onOpenChange={setToolsOpen}>
+            <DropdownMenuTrigger className={cn(toolbarBtn, "inline-flex items-center gap-1.5 px-3")}>
+              <WrenchIcon className="size-3.5 opacity-70" />
+              Tools
+              {toolsOpen ? (
+                <ChevronUpIcon className="size-3.5 opacity-70" />
+              ) : (
+                <ChevronDownIcon className="size-3.5 opacity-70" />
+              )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-44">
+              <DropdownMenuGroup>
+                {onAddShift ? (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      onAddShift();
+                      setToolsOpen(false);
+                    }}
+                  >
+                    <PlusIcon />
+                    Add shift
+                  </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuItem
+                  onClick={() => {
+                    onCalendarOpenChange(true);
+                    setToolsOpen(false);
+                  }}
+                >
+                  <CalendarIcon />
+                  Jump to week
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onJumpToCurrentWeek} disabled={isCurrentWeek}>
+                  <CalendarIcon />
+                  Go to today
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {onPublishSchedule ? (
-            <Button type="button" onClick={onPublishSchedule} disabled={published}>
-              <SendIcon />
-              {published ? "Published" : "Publish"}
+            <Button
+              type="button"
+              onClick={onPublishSchedule}
+              disabled={published}
+              className={cn(
+                "h-9 gap-1.5 rounded-lg shadow-none disabled:opacity-100",
+                published
+                  ? "bg-muted text-muted-foreground hover:bg-muted"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90",
+              )}
+            >
+              <SendIcon className="size-3.5" />
+              Publish ({published ? 0 : publishCount})
             </Button>
           ) : null}
         </div>
       </div>
-      {!isCurrentWeek ? null : <Badge tone="primary" className="mt-2">Current week</Badge>}
     </div>
   );
 }

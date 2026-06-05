@@ -65,6 +65,49 @@ export function formatDayColumnHeader(iso: string, day: ScheduleDay): string {
   return `${day} ${date.getDate()}`;
 }
 
+/** e.g. "MON 8" — uppercase day label for schedule grid headers */
+export function formatDayColumnHeaderUpper(iso: string, day: ScheduleDay): string {
+  const date = parseDate(iso);
+  return `${day.toUpperCase()} ${date.getDate()}`;
+}
+
+/** e.g. "Aug 24, 2025 – Aug 30, 2025" for toolbar date range */
+export function formatWeekRangeLong(weekStart: string): string {
+  const start = parseDate(weekStart);
+  const end = parseDate(addDays(weekStart, 6));
+  const startLabel = start.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const endLabel = end.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return `${startLabel} – ${endLabel}`;
+}
+
+/** "11:00 AM" → "11:00am" (drops ":00" → "11am" for whole hours) */
+export function formatCompactTime(time: string): string {
+  const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) {
+    return time;
+  }
+  const hour = Number.parseInt(match[1] ?? "0", 10);
+  const minutes = match[2];
+  const meridiem = (match[3] ?? "AM").toLowerCase();
+  if (minutes === "00") {
+    return `${hour}${meridiem}`;
+  }
+  return `${hour}:${minutes}${meridiem}`;
+}
+
+/** e.g. "9am-5pm" for schedule shift cards */
+export function formatCompactTimeRange(start: string, end: string): string {
+  return `${formatCompactTime(start)}-${formatCompactTime(end)}`;
+}
+
 export function isTodayIso(iso: string): boolean {
   const today = toDateString(new Date());
   return iso === today;

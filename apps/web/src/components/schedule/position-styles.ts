@@ -4,6 +4,7 @@ type ShiftBadgeTone = "neutral" | "success" | "warning" | "danger" | "info" | "p
 
 export type PositionCardStyle = {
   card: string;
+  bar: string;
   title: string;
   meta: string;
   footer: string;
@@ -11,59 +12,67 @@ export type PositionCardStyle = {
   badge: ShiftBadgeTone;
 };
 
+/** Solid fill shift cards — chunky centered pills like reference scheduling UI. */
 export const POSITION_CARD_STYLES: Record<Position, PositionCardStyle> = {
   Manager: {
-    card: "border-[#2f7f83] bg-[#3b8589] shadow-[#3b8589]/10",
+    card: "border-[#5c4a78] bg-[#5c4a78]",
+    bar: "bg-[#5c4a78]",
     title: "text-white",
     meta: "text-white/90",
-    footer: "text-white/85",
-    dot: "bg-[#3b8589]",
-    badge: "success",
+    footer: "text-white/80",
+    dot: "bg-[#5c4a78]",
+    badge: "primary",
   },
   "Shift Lead": {
-    card: "border-[#346f73] bg-[#3a7f82] shadow-[#3a7f82]/10",
+    card: "border-[#6b5890] bg-[#6b5890]",
+    bar: "bg-[#6b5890]",
     title: "text-white",
     meta: "text-white/90",
-    footer: "text-white/85",
-    dot: "bg-[#3a7f82]",
+    footer: "text-white/80",
+    dot: "bg-[#6b5890]",
     badge: "info",
   },
   Barista: {
-    card: "border-[#2f7376] bg-[#3a8081] shadow-[#3a8081]/10",
+    card: "border-[#3d7a7a] bg-[#3d7a7a]",
+    bar: "bg-[#3d7a7a]",
     title: "text-white",
     meta: "text-white/90",
     footer: "text-white/85",
-    dot: "bg-[#3a8081]",
-    badge: "primary",
+    dot: "bg-[#3d7a7a]",
+    badge: "info",
   },
   Cashier: {
-    card: "border-[#367dcc] bg-[#407fd0] shadow-[#407fd0]/10",
+    card: "border-[#3b82c4] bg-[#3b82c4]",
+    bar: "bg-[#3b82c4]",
     title: "text-white",
     meta: "text-white/90",
     footer: "text-white/85",
-    dot: "bg-[#407fd0]",
-    badge: "danger",
+    dot: "bg-[#3b82c4]",
+    badge: "primary",
   },
   Cook: {
-    card: "border-[#e2ce4f] bg-[#f0df64] shadow-[#f0df64]/10",
-    title: "text-[#241544]",
-    meta: "text-[#241544]/85",
-    footer: "text-[#241544]/75",
-    dot: "bg-[#f0df64]",
+    card: "border-[#f2d96d] bg-[#f2d96d]",
+    bar: "bg-[#f2d96d]",
+    title: "text-[#1a1a1a]",
+    meta: "text-[#2a2a2a]/90",
+    footer: "text-[#2a2a2a]/75",
+    dot: "bg-[#f2d96d]",
     badge: "success",
   },
   Server: {
-    card: "border-[#346fca] bg-[#437fd2] shadow-[#437fd2]/10",
+    card: "border-[#4a8fb8] bg-[#4a8fb8]",
+    bar: "bg-[#4a8fb8]",
     title: "text-white",
     meta: "text-white/90",
     footer: "text-white/85",
-    dot: "bg-[#437fd2]",
+    dot: "bg-[#4a8fb8]",
     badge: "warning",
   },
 };
 
 export const OPEN_SHIFT_STYLE: PositionCardStyle = {
-  card: "border-dashed border-[#c9c3b5] bg-[#f7f6f1] shadow-none",
+  card: "border-dashed border-border/70 bg-muted/50",
+  bar: "bg-muted-foreground/40",
   title: "text-foreground",
   meta: "text-muted-foreground",
   footer: "text-muted-foreground",

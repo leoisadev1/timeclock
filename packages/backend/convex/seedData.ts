@@ -815,44 +815,36 @@ async function seedSchedules(
     }
     const today = formatIsoDateInTimezone(now(), locationSeed.timezone);
     const currentWeekStart = getWeekStartDate(today, locationSeed.weekStartDay);
-    const nextWeekStart = addDays(currentWeekStart, 7);
-    const currentScheduleId = await upsertSchedule(
-      ctx,
-      companyId,
-      locationId,
-      currentWeekStart,
-      true,
-    );
-    const nextScheduleId = await upsertSchedule(ctx, companyId, locationId, nextWeekStart, false);
-    await clearScheduleShifts(ctx, currentScheduleId);
-    await clearScheduleShifts(ctx, nextScheduleId);
+    const seedWeekOffsets = [-14, -7, 0, 7, 14, 21, 28];
 
     const positionsForLocation = positionIds.get(locationSeed.key);
     if (!positionsForLocation) {
       throw new Error(`Missing positions for ${locationSeed.key}`);
     }
-    await seedWeekShifts(
-      ctx,
-      currentScheduleId,
-      locationSeed,
-      locationId,
-      currentWeekStart,
-      positionsForLocation,
-      employeeIds,
-      seededShiftIds,
-      today,
-    );
-    await seedWeekShifts(
-      ctx,
-      nextScheduleId,
-      locationSeed,
-      locationId,
-      nextWeekStart,
-      positionsForLocation,
-      employeeIds,
-      new Map(),
-      "",
-    );
+
+    for (const offsetDays of seedWeekOffsets) {
+      const weekStart = addDays(currentWeekStart, offsetDays);
+      const isCurrentWeek = offsetDays === 0;
+      const scheduleId = await upsertSchedule(
+        ctx,
+        companyId,
+        locationId,
+        weekStart,
+        offsetDays <= 0,
+      );
+      await clearScheduleShifts(ctx, scheduleId);
+      await seedWeekShifts(
+        ctx,
+        scheduleId,
+        locationSeed,
+        locationId,
+        weekStart,
+        positionsForLocation,
+        employeeIds,
+        isCurrentWeek ? seededShiftIds : new Map(),
+        isCurrentWeek ? today : "",
+      );
+    }
   }
   return seededShiftIds;
 }

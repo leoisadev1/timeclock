@@ -8,6 +8,7 @@ import {
 import { ScheduleShiftCard } from "@/components/schedule/schedule-shift-card";
 import { calculateShiftHours } from "@/lib/timeclock-adapter";
 import type { Employee, Shift } from "@/lib/timeclock-types";
+import { cn } from "@timeclock/ui/lib/utils";
 import { CalendarDaysIcon, CircleIcon, EyeIcon } from "lucide-react";
 
 const TEAM_COLUMN_WIDTH = "minmax(13rem, 15rem)";
@@ -40,16 +41,16 @@ export function ScheduleTeamGrid({
   const teamRows = rows.filter(Boolean).length;
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto bg-card">
       <div className="min-w-[1220px]">
         <div
-          className="grid border-b border-[#dedbd1] bg-white"
+          className="grid border-b border-border bg-card"
           style={{ gridTemplateColumns: `${TEAM_COLUMN_WIDTH} repeat(7, ${DAY_COLUMN_WIDTH})` }}
         >
-          <div className="border-r border-[#dedbd1] px-4 py-2">
+          <div className="border-r border-border px-4 py-2">
             <label className="grid gap-1">
-              <span className="text-xs font-semibold text-[#6f6a5f]">View by</span>
-              <select className="h-9 rounded-md border border-[#c9c3b5] bg-white px-3 text-sm font-medium text-[#2d1b4f] outline-none">
+              <span className="text-xs font-semibold text-muted-foreground">View by</span>
+              <select className="h-9 rounded-md border border-border bg-muted/40 px-3 text-sm font-medium text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30">
                 <option>First name</option>
                 <option>Role</option>
                 <option>Hours</option>
@@ -61,20 +62,22 @@ export function ScheduleTeamGrid({
             return (
               <div
                 key={day}
-                className={`border-r border-[#dedbd1] px-2 py-4 text-center last:border-r-0 ${
-                  today ? "bg-[#f8f4ff]" : ""
-                }`}
+                className={cn(
+                  "border-r border-border px-2 py-4 text-center last:border-r-0",
+                  today && "bg-primary/8",
+                )}
               >
                 <p
-                  className={`inline-flex rounded-full px-3 py-1 text-sm font-bold ${
+                  className={cn(
+                    "inline-flex rounded-full px-3 py-1 text-sm font-bold",
                     today
-                      ? "border border-primary text-primary"
-                      : "text-[#2d1b4f]"
-                  }`}
+                      ? "border border-primary/50 text-primary"
+                      : "text-foreground",
+                  )}
                 >
                   {formatDayColumnHeader(iso, day)}
                 </p>
-                <p className="mt-1 text-[11px] tabular-nums text-[#767167]">
+                <p className="mt-1 text-[11px] tabular-nums text-muted-foreground">
                   {dayTotal(shifts, day).toFixed(1)}h
                 </p>
               </div>
@@ -83,46 +86,54 @@ export function ScheduleTeamGrid({
         </div>
 
         <div
-          className="grid border-b border-[#dedbd1] bg-white"
+          className="grid border-b border-border bg-card"
           style={{ gridTemplateColumns: `${TEAM_COLUMN_WIDTH} repeat(7, ${DAY_COLUMN_WIDTH})` }}
         >
-          <div className="flex items-center gap-3 border-r border-[#dedbd1] px-4 py-3 text-sm font-semibold text-[#2d1b4f]">
-            <CalendarDaysIcon className="size-4 text-[#6f6a5f]" />
+          <div className="flex items-center gap-3 border-r border-border px-4 py-3 text-sm font-semibold text-foreground">
+            <CalendarDaysIcon className="size-4 text-muted-foreground" />
             Events (0)
           </div>
           {weekDates.map(({ day }) => (
-            <div key={day} className="min-h-12 border-r border-[#dedbd1] last:border-r-0" />
+            <div
+              key={day}
+              className="schedule-cell-hatch min-h-12 border-r border-border last:border-r-0"
+            />
           ))}
         </div>
 
         <div
-          className="grid border-b border-[#dedbd1] bg-white"
+          className="grid border-b border-border bg-card"
           style={{ gridTemplateColumns: `${TEAM_COLUMN_WIDTH} repeat(7, ${DAY_COLUMN_WIDTH})` }}
         >
-          <div className="flex items-center gap-3 border-r border-[#dedbd1] px-4 py-3">
-            <CircleIcon className="size-4 fill-[#6f6a5f] text-[#6f6a5f]" />
+          <div className="flex items-center gap-3 border-r border-border px-4 py-3">
+            <CircleIcon className="size-4 fill-muted-foreground text-muted-foreground" />
             <div>
-              <p className="text-sm font-semibold text-[#2d1b4f]">Open shifts ({openShiftCount})</p>
-              <p className="text-xs tabular-nums text-[#767167]">
+              <p className="text-sm font-semibold text-foreground">Open shifts ({openShiftCount})</p>
+              <p className="text-xs tabular-nums text-muted-foreground">
                 {openShiftHours(shifts).toFixed(2)} hours need coverage
               </p>
             </div>
           </div>
           {SCHEDULE_DAYS.map((day) => {
             const cellShiftsList = cellShifts(shifts, day, undefined);
+            const empty = cellShiftsList.length === 0;
             return (
               <div
                 key={day}
                 role="button"
                 tabIndex={0}
                 onClick={onCellClick}
-                className="min-h-[4.5rem] border-r border-[#dedbd1] p-1.5 last:border-r-0 hover:bg-[#faf9f5]"
+                className={cn(
+                  "schedule-cell-interactive min-h-[4.5rem] border-r border-border p-1.5 last:border-r-0 hover:bg-muted/20",
+                  empty && "schedule-cell-hatch",
+                )}
               >
-                <div className="grid gap-1.5">
+                <div className="relative grid gap-1.5">
                   {cellShiftsList.map((shift) => (
                     <ScheduleShiftCard
                       key={shift.id}
                       shift={shift}
+                      compact
                       onEdit={() => onEditShift(shift)}
                       onDuplicate={() => onDuplicateShift(shift)}
                       onDelete={() => onDeleteShift(shift.id)}
@@ -134,81 +145,92 @@ export function ScheduleTeamGrid({
           })}
         </div>
 
-        <div className="border-b border-[#dedbd1] bg-[#f2f1ed] px-4 py-2 text-sm font-bold text-[#6f6a5f]">
+        <div className="border-b border-border bg-muted/35 px-4 py-2 text-sm font-bold text-muted-foreground">
           Team members ({teamRows})
         </div>
 
-        {rows.map((employee, rowIndex) => (
+        {rows.map((employee, rowIndex) =>
           !employee ? null : (
-          <div
-            key={employee.id}
-            className={`grid border-b border-[#dedbd1] last:border-b-0 ${
-              rowIndex % 2 === 1 ? "bg-[#fbfaf7]" : "bg-white"
-            }`}
-            style={{ gridTemplateColumns: `${TEAM_COLUMN_WIDTH} repeat(7, ${DAY_COLUMN_WIDTH})` }}
-          >
-            <div className="border-r border-[#dedbd1] px-4 py-3">
-              <TeamRowLabel employee={employee} shifts={shifts} />
-            </div>
+            <div
+              key={employee.id}
+              className={cn(
+                "grid border-b border-border last:border-b-0",
+                rowIndex % 2 === 1 ? "bg-muted/15" : "bg-card",
+              )}
+              style={{ gridTemplateColumns: `${TEAM_COLUMN_WIDTH} repeat(7, ${DAY_COLUMN_WIDTH})` }}
+            >
+              <div className="border-r border-border px-4 py-3">
+                <TeamRowLabel employee={employee} shifts={shifts} />
+              </div>
 
-            {SCHEDULE_DAYS.map((day) => {
-              const iso = weekDates.find((entry) => entry.day === day)?.iso ?? "";
-              const today = isTodayIso(iso);
-              const cellShiftsList = cellShifts(shifts, day, employee);
+              {SCHEDULE_DAYS.map((day) => {
+                const iso = weekDates.find((entry) => entry.day === day)?.iso ?? "";
+                const today = isTodayIso(iso);
+                const cellShiftsList = cellShifts(shifts, day, employee);
+                const empty = cellShiftsList.length === 0;
 
-              return (
-                <div
-                  key={day}
-                  role="button"
-                  tabIndex={0}
-                  onClick={onCellClick}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      onCellClick();
-                    }
-                  }}
-                  className={`group/cell relative min-h-[4.9rem] border-r border-[#dedbd1] p-1.5 last:border-r-0 transition-colors duration-150 hover:bg-[#faf9f5] ${
-                    today ? "bg-[#f8f4ff]" : ""
-                  }`}
-                >
-                  <div className="flex flex-col gap-1.5">
-                    {cellShiftsList.map((shift) => (
-                      <ScheduleShiftCard
-                        key={shift.id}
-                        shift={shift}
-                        employee={employee}
-                        onEdit={() => onEditShift(shift)}
-                        onDuplicate={() => onDuplicateShift(shift)}
-                        onDelete={() => onDeleteShift(shift.id)}
-                      />
-                    ))}
-                    {cellShiftsList.length === 0 ? (
-                      <div className="flex h-full min-h-[3.75rem] items-center justify-center rounded-md border border-dashed border-transparent opacity-0 transition-opacity duration-150 group-hover/cell:border-[#c9c3b5] group-hover/cell:opacity-100">
-                        <span className="text-[11px] text-muted-foreground">Add shift</span>
-                      </div>
-                    ) : null}
+                return (
+                  <div
+                    key={day}
+                    role="button"
+                    tabIndex={0}
+                    onClick={onCellClick}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onCellClick();
+                      }
+                    }}
+                    className={cn(
+                      "group/cell relative min-h-[4.9rem] border-r border-border p-1.5 last:border-r-0 transition-colors duration-150 hover:bg-muted/20",
+                      empty && "schedule-cell-hatch",
+                      today && !empty && "bg-primary/8",
+                      today && empty && "ring-1 ring-inset ring-primary/25",
+                    )}
+                  >
+                    <div className="relative flex flex-col gap-1.5">
+                      {cellShiftsList.map((shift) => (
+                        <ScheduleShiftCard
+                          key={shift.id}
+                          shift={shift}
+                          employee={employee}
+                          compact
+                          onEdit={() => onEditShift(shift)}
+                          onDuplicate={() => onDuplicateShift(shift)}
+                          onDelete={() => onDeleteShift(shift.id)}
+                        />
+                      ))}
+                      {empty ? (
+                        <div className="flex h-full min-h-[3.75rem] items-center justify-center rounded-md opacity-0 transition-opacity duration-150 group-hover/cell:opacity-100">
+                          <span className="rounded-md bg-card/90 px-2 py-1 text-[11px] font-medium text-muted-foreground shadow-sm ring-1 ring-border">
+                            Add shift
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-          )
-        ))}
+                );
+              })}
+            </div>
+          ),
+        )}
 
         <div
-          className="sticky bottom-0 grid border-t border-[#dedbd1] bg-[#f6f5f1] shadow-[0_-4px_12px_rgba(45,27,79,0.06)]"
+          className="sticky bottom-0 grid border-t border-border bg-muted/40 shadow-[0_-4px_16px_rgba(0,0,0,0.35)] backdrop-blur-sm"
           style={{ gridTemplateColumns: `${TEAM_COLUMN_WIDTH} repeat(7, ${DAY_COLUMN_WIDTH})` }}
         >
-          <div className="border-r border-[#dedbd1] px-4 py-2 text-xs font-semibold text-[#6f6a5f]">
+          <div className="border-r border-border px-4 py-2 text-xs font-semibold text-muted-foreground">
             <p>Wages</p>
             <p>Hours</p>
           </div>
           {SCHEDULE_DAYS.map((day) => {
             const hours = dayTotal(shifts, day);
             return (
-              <div key={day} className="border-r border-[#dedbd1] px-3 py-2 text-right text-xs tabular-nums text-[#6f6a5f] last:border-r-0">
-                <p className="font-semibold">${(hours * 18).toFixed(2)}</p>
+              <div
+                key={day}
+                className="border-r border-border px-3 py-2 text-right text-xs tabular-nums text-muted-foreground last:border-r-0"
+              >
+                <p className="font-semibold text-foreground">${(hours * 18).toFixed(2)}</p>
                 <p>{hours.toFixed(2)}</p>
               </div>
             );
@@ -232,12 +254,12 @@ function TeamRowLabel({ employee, shifts }: { employee: Employee; shifts: Shift[
         size="md"
       />
       <div className="min-w-0">
-        <p className="truncate text-sm font-bold text-[#2d1b4f]">{employee.name}</p>
-        <p className="truncate text-xs text-[#767167]">
+        <p className="truncate text-sm font-bold text-foreground">{employee.name}</p>
+        <p className="truncate text-xs text-muted-foreground">
           {hours.toFixed(2)} hrs / ${(hours * 18).toFixed(2)}
         </p>
       </div>
-      <EyeIcon className="ml-auto size-4 text-[#d7d3c7]" />
+      <EyeIcon className="ml-auto size-4 text-muted-foreground/40" />
     </div>
   );
 }

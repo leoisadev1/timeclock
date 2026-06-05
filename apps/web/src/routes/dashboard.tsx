@@ -490,10 +490,18 @@ function RouteComponent() {
     api.locations.listForCurrentUser,
     canLoadManagerData ? {} : "skip",
   );
+  const demoStatus = useQuery(api.demo.getStatus, canLoadManagerData ? {} : "skip");
+  const workspaceStatus = useQuery(
+    api.demo.getManagerWorkspaceStatus,
+    canLoadManagerData ? {} : "skip",
+  );
   const convexLocations = (rawConvexLocations ?? []).filter(
     (loc): loc is NonNullable<typeof loc> => loc !== null,
   );
   const hasConvexLocations = convexLocations.length > 0;
+  const locationsLoading = canLoadManagerData && rawConvexLocations === undefined;
+  const workspaceMetaLoading =
+    canLoadManagerData && (demoStatus === undefined || workspaceStatus === undefined);
 
   const locations: Location[] = convexLocations.map(mapConvexLocation);
 
@@ -575,9 +583,71 @@ function RouteComponent() {
   const deactivatePosition = useMutation(api.positions.deactivate);
   const updateSettings = useMutation(api.locations.updateSettings);
   const resetAndSeedForCurrentUser = useMutation(api.demo.resetAndSeedForCurrentUser);
+  const ensureManagerAccess = useMutation(api.demo.ensureManagerAccess);
   const createLocationMutation = useMutation(api.locations.create);
   const [createLocationPending, setCreateLocationPending] = useState(false);
   const [seedResetPending, setSeedResetPending] = useState(false);
+  const [linkPending, setLinkPending] = useState(false);
+  const [autoLinkAttempted, setAutoLinkAttempted] = useState(false);
+
+  useEffect(() => {
+    if (
+      !canLoadManagerData ||
+      locationsLoading ||
+      workspaceMetaLoading ||
+      hasConvexLocations ||
+      autoLinkAttempted ||
+      linkPending ||
+      seedResetPending
+    ) {
+      return;
+    }
+    if (demoStatus?.seeded !== true) {
+      return;
+    }
+
+    setAutoLinkAttempted(true);
+    void ensureManagerAccess({})
+      .then((result) => {
+        if (result.linked && !result.alreadyLinked) {
+          toast.success(`${result.manager?.name ?? "Manager"} connected to this account`);
+        }
+      })
+      .catch(() => {
+        // User can connect manually from the setup card.
+      });
+  }, [
+    autoLinkAttempted,
+    canLoadManagerData,
+    demoStatus?.seeded,
+    ensureManagerAccess,
+    hasConvexLocations,
+    linkPending,
+    locationsLoading,
+    seedResetPending,
+    workspaceMetaLoading,
+  ]);
+
+  async function connectManagerAccess() {
+    setLinkPending(true);
+    try {
+      const result = await ensureManagerAccess({});
+      if (!result.linked || !result.manager) {
+        toast.error("Could not connect manager access for this account.");
+        return;
+      }
+      toast.success(
+        result.alreadyLinked
+          ? `${result.manager.name} is already connected`
+          : `${result.manager.name} connected to this account`,
+      );
+      updateSearch({ location: undefined, week: undefined });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not connect manager access");
+    } finally {
+      setLinkPending(false);
+    }
+  }
 
   const employees = useMemo(
     () =>
@@ -609,31 +679,81 @@ function RouteComponent() {
       ? mapDashboard(convexDashboard, activeLocation, currentSchedule)
       : undefined;
 
-  if (!activeLocation || !convexLocationId) {
+  if (!auth.isLoaded) {
     return (
       <DashboardState
-        title="Set up your manager workspace"
-        detail="Reset the demo data and seed it for your signed-in Clerk user."
+        title="Loading session"
+        detail="Confirming your Clerk sign-in before opening the manager workspace."
+      />
+    );
+  }
+
+  if (
+    locationsLoading ||
+    workspaceMetaLoading ||
+    (demoStatus?.seeded && linkPending && !hasConvexLocations)
+  ) {
+    return (
+      <DashboardState
+        title="Loading workspace"
+        detail={
+          demoStatus?.seeded
+            ? "Connecting your account to the seeded demo locations."
+            : "Checking manager access and locations."
+        }
+      />
+    );
+  }
+
+  if (!activeLocation || !convexLocationId) {
+    const isSeeded = demoStatus?.seeded === true;
+    const isLinked = workspaceStatus?.linked === true;
+    const linkedWithoutLocations = isLinked && (workspaceStatus?.locationCount ?? 0) === 0;
+
+    return (
+      <DashboardState
+        title={
+          linkedWithoutLocations
+            ? "No locations assigned"
+            : isSeeded
+              ? "Connect manager access"
+              : "Set up your manager workspace"
+        }
+        detail={
+          linkedWithoutLocations
+            ? `${workspaceStatus?.managerName ?? "This manager"} has no active locations. Ask an admin to assign one, or reset demo data.`
+            : isSeeded
+              ? "Demo data is already in Convex. Link this Clerk account to a manager profile — you do not need to wipe the database again."
+              : "Seed demo locations and employees, then link them to your signed-in Clerk user."
+        }
         action={
-          <Button
-            disabled={seedResetPending}
-            onClick={async () => {
-              setSeedResetPending(true);
-              try {
-                const seeded = await resetAndSeedForCurrentUser({});
-                toast.success(`${seeded.linkedManager.name} is linked to this Clerk user`);
-                updateSearch({ location: undefined, week: undefined });
-              } catch (error) {
-                toast.error(
-                  error instanceof Error ? error.message : "Could not seed manager access",
-                );
-              } finally {
-                setSeedResetPending(false);
-              }
-            }}
-          >
-            {seedResetPending ? "Seeding..." : "Reset and seed for my user"}
-          </Button>
+          <div className="flex flex-col gap-2">
+            {isSeeded && !linkedWithoutLocations ? (
+              <Button disabled={linkPending || seedResetPending} onClick={connectManagerAccess}>
+                {linkPending ? "Connecting..." : "Connect my account"}
+              </Button>
+            ) : null}
+            <Button
+              variant={isSeeded ? "outline" : "default"}
+              disabled={seedResetPending || linkPending}
+              onClick={async () => {
+                setSeedResetPending(true);
+                try {
+                  const seeded = await resetAndSeedForCurrentUser({});
+                  toast.success(`${seeded.linkedManager.name} is linked to this Clerk user`);
+                  updateSearch({ location: undefined, week: undefined });
+                } catch (error) {
+                  toast.error(
+                    error instanceof Error ? error.message : "Could not seed manager access",
+                  );
+                } finally {
+                  setSeedResetPending(false);
+                }
+              }}
+            >
+              {seedResetPending ? "Resetting..." : isSeeded ? "Reset demo data" : "Seed for my user"}
+            </Button>
+          </div>
         }
       />
     );

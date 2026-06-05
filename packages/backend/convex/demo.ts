@@ -3,7 +3,12 @@ import { mutation, query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { ensureDemoData, resetDemoData } from "./seedData";
 import type { MutationCtx } from "./_generated/server";
-import { getDemoCompany, requireDemoCompany, type ReaderCtx } from "./shared";
+import {
+  getCurrentEmployee,
+  getDemoCompany,
+  requireDemoCompany,
+  type ReaderCtx,
+} from "./shared";
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -107,6 +112,120 @@ export const resetAndSeedForCurrentUser = mutation({
     return {
       ...seeded,
       linkedManager: {
+        employeeId: manager._id,
+        name: manager.displayName,
+        role: manager.role as "admin" | "manager",
+      },
+    };
+  },
+});
+
+async function countManagerLocations(
+  ctx: MutationCtx,
+  employee: Doc<"employees">,
+): Promise<number> {
+  if (employee.role === "admin") {
+    const locations = await ctx.db
+      .query("locations")
+      .withIndex("by_companyId_and_active", (q) =>
+        q.eq("companyId", employee.companyId).eq("active", true),
+      )
+      .take(50);
+    return locations.length;
+  }
+  if (employee.role !== "manager") {
+    return 0;
+  }
+  const assignments = await ctx.db
+    .query("managerLocations")
+    .withIndex("by_managerId", (q) => q.eq("managerId", employee._id))
+    .take(50);
+  let count = 0;
+  for (const assignment of assignments) {
+    if (!assignment.active) {
+      continue;
+    }
+    const location = await ctx.db.get(assignment.locationId);
+    if (location?.active) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+export const ensureManagerAccess = mutation({
+  args: {},
+  returns: v.object({
+    linked: v.boolean(),
+    alreadyLinked: v.boolean(),
+    locationCount: v.number(),
+    manager: v.union(
+      v.object({
+        employeeId: v.id("employees"),
+        name: v.string(),
+        role: v.union(v.literal("admin"), v.literal("manager")),
+      }),
+      v.null(),
+    ),
+  }),
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({
+        code: "NOT_AUTHENTICATED",
+        message: "Sign in with Clerk before connecting manager access.",
+      });
+    }
+
+    const company = await getDemoCompany(ctx);
+    if (!company) {
+      return {
+        linked: false,
+        alreadyLinked: false,
+        locationCount: 0,
+        manager: null,
+      };
+    }
+
+    const existing = await getCurrentEmployee(ctx);
+    if (
+      existing?.active &&
+      ["admin", "manager"].includes(existing.role) &&
+      existing.companyId === company._id
+    ) {
+      if (existing.authTokenIdentifier !== identity.tokenIdentifier) {
+        await linkEmployeeToIdentity(ctx, existing, identity.tokenIdentifier, identity.email);
+      }
+      const locationCount = await countManagerLocations(ctx, existing);
+      return {
+        linked: true,
+        alreadyLinked: true,
+        locationCount,
+        manager: {
+          employeeId: existing._id,
+          name: existing.displayName,
+          role: existing.role as "admin" | "manager",
+        },
+      };
+    }
+
+    const manager = await findSeededManagerForIdentity(ctx, company._id, identity.email);
+    if (!manager) {
+      return {
+        linked: false,
+        alreadyLinked: false,
+        locationCount: 0,
+        manager: null,
+      };
+    }
+
+    await linkEmployeeToIdentity(ctx, manager, identity.tokenIdentifier, identity.email);
+    const locationCount = await countManagerLocations(ctx, manager);
+    return {
+      linked: true,
+      alreadyLinked: false,
+      locationCount,
+      manager: {
         employeeId: manager._id,
         name: manager.displayName,
         role: manager.role as "admin" | "manager",
@@ -256,6 +375,65 @@ export const getStatus = query({
     return {
       seeded: company !== null,
       companyName: company?.name ?? null,
+    };
+  },
+});
+
+export const getManagerWorkspaceStatus = query({
+  args: {},
+  returns: v.object({
+    seeded: v.boolean(),
+    linked: v.boolean(),
+    locationCount: v.number(),
+    managerName: v.union(v.string(), v.null()),
+  }),
+  handler: async (ctx) => {
+    const company = await getDemoCompany(ctx);
+    const employee = await getCurrentEmployee(ctx);
+    if (
+      !company ||
+      !employee?.active ||
+      !["admin", "manager"].includes(employee.role) ||
+      employee.companyId !== company._id
+    ) {
+      return {
+        seeded: company !== null,
+        linked: false,
+        locationCount: 0,
+        managerName: null,
+      };
+    }
+
+    let locationCount = 0;
+    if (employee.role === "admin") {
+      const locations = await ctx.db
+        .query("locations")
+        .withIndex("by_companyId_and_active", (q) =>
+          q.eq("companyId", employee.companyId).eq("active", true),
+        )
+        .take(50);
+      locationCount = locations.length;
+    } else {
+      const assignments = await ctx.db
+        .query("managerLocations")
+        .withIndex("by_managerId", (q) => q.eq("managerId", employee._id))
+        .take(50);
+      for (const assignment of assignments) {
+        if (!assignment.active) {
+          continue;
+        }
+        const location = await ctx.db.get(assignment.locationId);
+        if (location?.active) {
+          locationCount += 1;
+        }
+      }
+    }
+
+    return {
+      seeded: true,
+      linked: true,
+      locationCount,
+      managerName: employee.displayName,
     };
   },
 });

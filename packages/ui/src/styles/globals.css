@@ -198,6 +198,23 @@
   .animate-view-enter {
     animation: view-enter 200ms var(--product-ease);
   }
+
+  .schedule-cell-hatch {
+    --schedule-hatch-line: color-mix(in oklch, var(--foreground) 7%, transparent);
+    background-color: var(--card);
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 7px,
+      var(--schedule-hatch-line) 7px,
+      var(--schedule-hatch-line) 8px
+    );
+  }
+
+  .group\/cell.schedule-cell-hatch:hover,
+  .schedule-cell-interactive.schedule-cell-hatch:hover {
+    --schedule-hatch-line: color-mix(in oklch, var(--foreground) 10%, transparent);
+  }
 }
 
 @layer base {

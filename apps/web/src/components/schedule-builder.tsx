@@ -20,7 +20,7 @@ import {
   weekDatesFromStart,
 } from "@/components/schedule";
 
-const surfaceClass = "overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border";
+const scheduleSurfaceClass = "overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border";
 
 interface ScheduleBuilderProps {
   schedule: ScheduleWeek;
@@ -32,6 +32,7 @@ interface ScheduleBuilderProps {
   onDuplicateShift?: (shift: Shift) => Promise<void>;
   onDeleteShift?: (shiftId: string) => Promise<void>;
   onPublishSchedule?: () => Promise<void>;
+  weekLoading?: boolean;
 }
 
 export function ScheduleBuilder({
@@ -44,6 +45,7 @@ export function ScheduleBuilder({
   onDuplicateShift,
   onDeleteShift,
   onPublishSchedule,
+  weekLoading = false,
 }: ScheduleBuilderProps) {
   const employees = (providedEmployees ?? getEmployees(schedule.locationId)).filter((e) => e.active);
   const [selectedDay, setSelectedDay] = useState<ScheduleDay>("Mon");
@@ -137,8 +139,23 @@ export function ScheduleBuilder({
     toast.success("Shift deleted");
   }
 
-  function openNew() {
-    setEditingShift(undefined);
+  function openNew(employee?: Employee, day?: ScheduleDay) {
+    const defaultPosition = employee?.position ?? positions?.[0]?.name ?? "Barista";
+    setEditingShift(
+      employee || day
+        ? {
+            id: `shift-${Date.now()}`,
+            locationId: schedule.locationId,
+            day: day ?? "Mon",
+            employeeId: employee?.id,
+            start: "9:00 AM",
+            end: "5:00 PM",
+            position: defaultPosition,
+            positionId: employee?.positionId ?? positions?.[0]?.id,
+            breakMinutes: 30,
+          }
+        : undefined,
+    );
     setDialogOpen(true);
   }
 
@@ -147,9 +164,7 @@ export function ScheduleBuilder({
     setDialogOpen(true);
   }
 
-  const warningTitle = warnings
-    .map((s) => `${s.day} ${s.start}: ${warningLabel(s.warning)}`)
-    .join(" · ");
+  const publishCount = schedule.published ? 0 : schedule.shifts.length;
 
   return (
     <div className="grid gap-4">
@@ -194,19 +209,19 @@ export function ScheduleBuilder({
         </section>
       ) : null}
 
-      <div className={`hidden lg:block ${surfaceClass}`}>
+      <div className={`hidden lg:block ${scheduleSurfaceClass}`}>
         <ScheduleWeekNav
           weekStartDate={schedule.weekStartDate}
           isCurrentWeek={isCurrentWeek}
           warningCount={warnings.length}
-          warningTitle={warningTitle}
+          publishCount={publishCount}
           calendarOpen={calendarOpen}
           onCalendarOpenChange={setCalendarOpen}
           onPreviousWeek={() => navigateWeek(-1)}
           onNextWeek={() => navigateWeek(1)}
           onJumpToCurrentWeek={jumpToCurrentWeek}
           onPickWeek={jumpToWeek}
-          onAddShift={openNew}
+          onAddShift={() => openNew()}
           onPublishSchedule={async () => {
             if (onPublishSchedule) {
               await onPublishSchedule();
@@ -226,16 +241,24 @@ export function ScheduleBuilder({
           }}
           published={schedule.published}
         />
-        <ScheduleTeamGrid
-          weekDates={weekDates}
-          employees={employees}
-          shifts={schedule.shifts}
-          openShiftCount={openShifts.length}
-          onCellClick={openNew}
-          onEditShift={openEdit}
-          onDuplicateShift={duplicateShift}
-          onDeleteShift={deleteShift}
-        />
+        <div
+          className={
+            weekLoading
+              ? "pointer-events-none opacity-60 transition-opacity duration-200 ease-out"
+              : "transition-opacity duration-200 ease-out"
+          }
+        >
+          <ScheduleTeamGrid
+            weekDates={weekDates}
+            employees={employees}
+            shifts={schedule.shifts}
+            openShiftCount={openShifts.length}
+            onCellClick={openNew}
+            onEditShift={openEdit}
+            onDuplicateShift={duplicateShift}
+            onDeleteShift={deleteShift}
+          />
+        </div>
       </div>
 
       <ScheduleMobileView
@@ -249,7 +272,7 @@ export function ScheduleBuilder({
         onPreviousWeek={() => navigateWeek(-1)}
         onNextWeek={() => navigateWeek(1)}
         onJumpToCurrentWeek={jumpToCurrentWeek}
-        onAddShift={openNew}
+        onAddShift={() => openNew()}
         onEditShift={openEdit}
         onDuplicateShift={duplicateShift}
         onDeleteShift={deleteShift}

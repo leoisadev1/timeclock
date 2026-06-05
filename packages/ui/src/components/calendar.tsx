@@ -123,7 +123,7 @@ function Calendar({
         >
           <ChevronLeftIcon />
         </Button>
-        <span className="text-sm font-semibold">{monthLabel}</span>
+        <span className="w-[9.5rem] truncate text-center text-sm font-semibold">{monthLabel}</span>
         <Button
           type="button"
           variant="outline"
