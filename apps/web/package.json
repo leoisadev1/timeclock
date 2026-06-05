@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build && node scripts/make-static-index.cjs",
+    "build": "vite build --config vite.spa.config.ts",
     "serve": "vite preview",
     "dev": "portless run --name timeclock vite dev"
   },
