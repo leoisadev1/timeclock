@@ -34,7 +34,7 @@ export const getDemoLogin = query({
     const employees = await ctx.db
       .query("employees")
       .withIndex("by_companyId_and_role", (q) => q.eq("companyId", company._id).eq("role", "employee"))
-      .take(20);
+      .take(50);
 
     const credential = (employee: (typeof admins)[number] | undefined) =>
       employee
@@ -53,7 +53,7 @@ export const getDemoLogin = query({
       company: { id: company._id, name: company.name },
       admin: credential(admins[0]),
       manager: credential(managers[0]),
-      employeePins: employees.slice(0, 5).map((employee) => ({
+      employeePins: employees.sort((a, b) => a.displayName.localeCompare(b.displayName)).map((employee) => ({
         employeeId: employee._id,
         name: employee.displayName,
         pin: employee.pin,

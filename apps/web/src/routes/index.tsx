@@ -106,7 +106,7 @@ function HomeComponent() {
               {!isLoading && !isSeeded && (
                 <div className="space-y-3">
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    Create a sample company with two locations, ten employees, this week&apos;s
+                    Create a sample company with two locations, nineteen employees, this week&apos;s
                     schedule, and today&apos;s timecards.
                   </p>
                   <Button onClick={() => bootstrapMutation({})}>Bootstrap demo data</Button>
