@@ -171,18 +171,60 @@ export function ScheduleBuilder({
         </div>
       </div>
 
-      {/* Warnings banner */}
-      {warnings.length > 0 && (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2.5 text-xs text-amber-700 dark:text-amber-300">
-          <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
-          <span>
-            {warnings.length} shift {warnings.length === 1 ? "warning" : "warnings"}:{" "}
-            {warnings.map((s) => `${s.day} ${s.start} (${warningLabel(s.warning)})`).join(", ")}
-          </span>
+      {/* Coverage + warnings — full width above schedule */}
+      <div className={`grid gap-4 ${warnings.length > 0 ? "md:grid-cols-2" : ""}`}>
+        <div className="rounded-xl ring-1 ring-foreground/10">
+          <div className="border-b px-4 py-3">
+            <h2 className="text-sm font-semibold">Coverage</h2>
+            <p className="text-xs text-muted-foreground">{totalHours.toFixed(1)}h total scheduled</p>
+          </div>
+          <div className="divide-y px-1 py-1">
+            {coverage.map((item) => {
+              const colors = POSITION_COLORS[item.position as Position];
+              return (
+                <div key={item.key} className="flex items-center justify-between px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`size-2 rounded-full ${colors?.dot ?? "bg-muted-foreground"}`} />
+                    <span className="text-xs">{item.position}</span>
+                  </div>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {item.hours.toFixed(1)}h
+                  </span>
+                </div>
+              );
+            })}
+            {coverage.length === 0 && (
+              <p className="px-3 py-3 text-xs text-muted-foreground">No shifts yet.</p>
+            )}
+          </div>
         </div>
-      )}
 
-      <div className="grid gap-5 xl:grid-cols-[1fr_240px]">
+        {warnings.length > 0 && (
+          <div className="rounded-xl ring-1 ring-foreground/10">
+            <div className="border-b px-4 py-3">
+              <div className="flex items-center gap-2">
+                <TriangleAlertIcon className="size-4 text-amber-600 dark:text-amber-400" />
+                <h2 className="text-sm font-semibold">Warnings</h2>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {warnings.length} shift {warnings.length === 1 ? "needs" : "need"} attention
+              </p>
+            </div>
+            <div className="divide-y px-1 py-1">
+              {warnings.map((shift) => (
+                <div key={shift.id} className="px-3 py-2">
+                  <Badge tone="warning">{warningLabel(shift.warning)}</Badge>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    {shift.day} · {shift.start}–{shift.end} · {shift.position}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="grid gap-5">
         {/* ── Desktop grid ──────────────────────────────────────────────── */}
         <div className="hidden overflow-x-auto rounded-xl ring-1 ring-foreground/10 lg:block">
           {/* Day headers */}
@@ -307,55 +349,6 @@ export function ScheduleBuilder({
             )}
           </div>
         </div>
-
-        {/* ── Sidebar: coverage + warnings ─────────────────────────────── */}
-        <aside className="grid gap-4 content-start">
-          {/* Coverage by position */}
-          <div className="rounded-xl ring-1 ring-foreground/10">
-            <div className="border-b px-4 py-3">
-              <h2 className="text-sm font-semibold">Coverage</h2>
-              <p className="text-xs text-muted-foreground">{totalHours.toFixed(1)}h total scheduled</p>
-            </div>
-            <div className="divide-y px-1 py-1">
-              {coverage.map((item) => {
-                const colors = POSITION_COLORS[item.position as Position];
-                return (
-                  <div key={item.key} className="flex items-center justify-between px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`size-2 rounded-full ${colors?.dot ?? "bg-muted-foreground"}`} />
-                      <span className="text-xs">{item.position}</span>
-                    </div>
-                    <span className="text-xs tabular-nums text-muted-foreground">
-                      {item.hours.toFixed(1)}h
-                    </span>
-                  </div>
-                );
-              })}
-              {coverage.length === 0 && (
-                <p className="px-3 py-3 text-xs text-muted-foreground">No shifts yet.</p>
-              )}
-            </div>
-          </div>
-
-          {/* Warnings */}
-          {warnings.length > 0 && (
-            <div className="rounded-xl ring-1 ring-foreground/10">
-              <div className="border-b px-4 py-3">
-                <h2 className="text-sm font-semibold">Warnings</h2>
-              </div>
-              <div className="divide-y px-1 py-1">
-                {warnings.map((shift) => (
-                  <div key={shift.id} className="px-3 py-2">
-                    <Badge tone="warning">{warningLabel(shift.warning)}</Badge>
-                    <p className="mt-1 text-[10px] text-muted-foreground">
-                      {shift.day} · {shift.start}–{shift.end} · {shift.position}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </aside>
       </div>
 
       <ShiftDialog
