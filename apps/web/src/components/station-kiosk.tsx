@@ -2,12 +2,7 @@ import { EmployeeAvatar } from "@/components/employee-avatar";
 import { LocationSwitcher } from "@/components/location-switcher";
 import { PortalShell } from "@/components/portal-shell";
 import { SamplePinHints } from "@/components/sample-pin-hints";
-import {
-  eventLabel,
-  formatElapsed,
-  markStationActivitySession,
-  useLiveNow,
-} from "@/components/station-activity";
+import { eventLabel } from "@/components/station-activity";
 import { usePortalLocations } from "@/hooks/use-portal-locations";
 import {
   getEmployeePortal,
@@ -176,8 +171,6 @@ function ConvexEmployeePanel({
   avatarUrl,
   positionName,
   locationId,
-  now,
-  sessionStartedAt,
   onPunchComplete,
 }: {
   employeeId: Id<"employees">;
@@ -185,8 +178,6 @@ function ConvexEmployeePanel({
   avatarUrl?: string | null;
   positionName: string | null;
   locationId: Id<"locations">;
-  now: number;
-  sessionStartedAt: number;
   onPunchComplete: () => void;
 }) {
   const clockInMutation = useMutation(api.timecards.clockIn);
@@ -202,9 +193,7 @@ function ConvexEmployeePanel({
   const status: TimecardStatus = currentStatus
     ? convexStatusToLocal(currentStatus.status)
     : "clocked-out";
-  const activeStartedAt = status === "clocked-out" ? undefined : sessionStartedAt;
-  const events =
-    currentStatus?.openTimecard?.events.filter((event) => event.occurredAt >= sessionStartedAt - 1000) ?? [];
+  const events = currentStatus?.openTimecard?.events ?? [];
 
   const initials = displayName
     .split(" ")
@@ -217,7 +206,6 @@ function ConvexEmployeePanel({
     try {
       if (action === "clock-in") {
         await clockInMutation({ employeeId, locationId, source: "station" });
-        markStationActivitySession(locationId, Date.now());
       } else if (action === "start-break") {
         await startBreakMutation({ employeeId, source: "station" });
       } else if (action === "end-break") {
@@ -260,23 +248,8 @@ function ConvexEmployeePanel({
         </div>
       </div>
 
-      <div className="grid gap-3 rounded-xl bg-muted/20 p-4 ring-1 ring-border md:p-5">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Session timer
-            </p>
-            <p className="mt-1 font-mono text-4xl font-semibold tabular-nums tracking-tight">
-              {activeStartedAt
-                ? formatElapsed(now - activeStartedAt, currentStatus?.openTimecard?.totalBreakMinutes ?? 0)
-                : "0:00"}
-            </p>
-          </div>
-          <Badge tone={status === "on-break" ? "warning" : status === "clocked-in" ? "success" : "neutral"}>
-            {status.replace("-", " ")}
-          </Badge>
-        </div>
-        <div className="border-t border-border pt-3">
+      <div className="rounded-xl bg-muted/20 p-4 ring-1 ring-border md:p-5">
+        <div>
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Today events
           </p>
@@ -318,7 +291,6 @@ function DemoEmployeePanel({
   avatarColor,
   position,
   status,
-  now,
   startedAt,
   onPunch,
 }: {
@@ -327,7 +299,6 @@ function DemoEmployeePanel({
   avatarColor: string;
   position: string;
   status: TimecardStatus;
-  now: number;
   startedAt: number;
   onPunch: (action: PunchAction) => void;
 }) {
@@ -352,20 +323,7 @@ function DemoEmployeePanel({
         </div>
       </div>
       <div className="rounded-xl bg-muted/20 p-4 ring-1 ring-border md:p-5">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Session timer
-            </p>
-            <p className="mt-1 font-mono text-4xl font-semibold tabular-nums tracking-tight">
-              {status === "clocked-out" ? "0:00" : formatElapsed(now - startedAt)}
-            </p>
-          </div>
-          <Badge tone={status === "on-break" ? "warning" : status === "clocked-in" ? "success" : "neutral"}>
-            {status.replace("-", " ")}
-          </Badge>
-        </div>
-        <div className="mt-4 border-t border-border pt-3">
+        <div>
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Today events
           </p>
@@ -398,7 +356,6 @@ type ConvexEmployeeState = {
   displayName: string;
   avatarUrl?: string | null;
   positionName: string | null;
-  sessionStartedAt: number;
 };
 
 type DemoEmployeeState = {
@@ -427,7 +384,6 @@ export function StationKiosk() {
   const [employee, setEmployee] = useState<EmployeeState | undefined>();
   const [error, setError] = useState<string | undefined>();
   const handledLookupRef = useRef<string | null>(null);
-  const now = useLiveNow(1000);
 
   const convexEmployee = useQuery(
     api.employees.getByPinForLocation,
@@ -455,7 +411,6 @@ export function StationKiosk() {
         displayName: convexEmployee.displayName,
         avatarUrl: convexEmployee.avatarUrl,
         positionName: convexEmployee.positionName,
-        sessionStartedAt: Date.now(),
       });
       setPin("");
       setSubmittedPin("");
@@ -599,8 +554,6 @@ export function StationKiosk() {
                   avatarUrl={employee.avatarUrl}
                   positionName={employee.positionName}
                   locationId={locationId as Id<"locations">}
-                  now={now}
-                  sessionStartedAt={employee.sessionStartedAt}
                   onPunchComplete={clearEmployee}
                 />
               ) : (
@@ -610,7 +563,6 @@ export function StationKiosk() {
                   avatarColor={employee.avatarColor}
                   position={employee.position}
                   status={employee.status}
-                  now={now}
                   startedAt={employee.startedAt}
                   onPunch={handleDemoPunch}
                 />

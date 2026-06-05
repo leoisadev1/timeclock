@@ -66,71 +66,6 @@ export type StationActivityData = {
   };
 };
 
-const STATION_ACTIVITY_SESSION_KEY = "timeclock.stationActivitySession";
-
-type StationActivitySession = {
-  locationId: string;
-  startedAt: number;
-};
-
-export function markStationActivitySession(locationId: string, startedAt = Date.now()) {
-  const session = { locationId, startedAt } satisfies StationActivitySession;
-  window.localStorage.setItem(STATION_ACTIVITY_SESSION_KEY, JSON.stringify(session));
-  window.dispatchEvent(new CustomEvent("timeclock:station-activity-session", { detail: session }));
-}
-
-function readStationActivitySession(): StationActivitySession | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(STATION_ACTIVITY_SESSION_KEY);
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as Partial<StationActivitySession>;
-    if (typeof parsed.locationId === "string" && typeof parsed.startedAt === "number") {
-      return { locationId: parsed.locationId, startedAt: parsed.startedAt };
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
-function emptyActivity(activity: StationActivityData): StationActivityData {
-  return {
-    ...activity,
-    onClock: [],
-    recentEvents: [],
-    quickCounts: {
-      onClock: 0,
-      clockedIn: 0,
-      onBreak: 0,
-      clockedOut: 0,
-    },
-  };
-}
-
-function filterActivityToSession(
-  activity: StationActivityData | null | undefined,
-  session: StationActivitySession | null,
-): StationActivityData | null | undefined {
-  if (!activity || !session || session.locationId !== activity.locationId) {
-    return activity ? emptyActivity(activity) : activity;
-  }
-  const threshold = session.startedAt - 1000;
-  const onClock = activity.onClock.filter((row) => (row.clockInAt ?? 0) >= threshold);
-  const recentEvents = activity.recentEvents.filter((event) => (event.occurredAt ?? 0) >= threshold);
-  return {
-    ...activity,
-    onClock,
-    recentEvents,
-    quickCounts: {
-      onClock: onClock.length,
-      clockedIn: onClock.filter((row) => normalizeStatus(row.status) === "clocked-in").length,
-      onBreak: onClock.filter((row) => normalizeStatus(row.status) === "on-break").length,
-      clockedOut: recentEvents.filter((event) => event.type === "clock_out" || event.type === "clock-out").length,
-    },
-  };
-}
-
 export function useLiveNow(intervalMs = 30000) {
   const [now, setNow] = useState(() => Date.now());
 
@@ -143,30 +78,14 @@ export function useLiveNow(intervalMs = 30000) {
 }
 
 export function useStationActivity(locationId: string, hasConvex: boolean) {
-  const [session, setSession] = useState<StationActivitySession | null>(() =>
-    readStationActivitySession(),
-  );
   const convexActivity = useQuery(
     api.timecards.getStationActivity,
     hasConvex && locationId ? { locationId: locationId as Id<"locations"> } : "skip",
   );
 
-  useEffect(() => {
-    const sync = () => setSession(readStationActivitySession());
-    window.addEventListener("storage", sync);
-    window.addEventListener("timeclock:station-activity-session", sync);
-    return () => {
-      window.removeEventListener("storage", sync);
-      window.removeEventListener("timeclock:station-activity-session", sync);
-    };
-  }, []);
-
   if (hasConvex) {
     return {
-      activity: filterActivityToSession(
-        (convexActivity ?? undefined) as StationActivityData | null | undefined,
-        session,
-      ),
+      activity: (convexActivity ?? undefined) as StationActivityData | null | undefined,
       isLoading: convexActivity === undefined,
     };
   }

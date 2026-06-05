@@ -176,7 +176,11 @@ export const getStationActivity = query({
         q.eq("locationId", args.locationId).eq("businessDate", businessDate),
       )
       .take(200);
-    const stationTimecards = timecards.filter((timecard) => timecard.source === "station");
+    const stationTimecards = timecards.filter(
+      (timecard) =>
+        timecard.source === "station" &&
+        Math.abs(timecard.createdAt - timecard.clockInAt) <= 5 * 60 * 1000,
+    );
 
     const rows = [];
     const recentEvents = [];
