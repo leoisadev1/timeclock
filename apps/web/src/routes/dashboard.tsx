@@ -4,12 +4,6 @@ import { ReportsView } from "@/components/reports-view";
 import { ScheduleBuilder } from "@/components/schedule-builder";
 import { SettingsView } from "@/components/settings-view";
 import { TodayDashboard } from "@/components/today-dashboard";
-import {
-  getLocations,
-  getScheduleWeek,
-  getTodayDashboard,
-  saveScheduleWeek,
-} from "@/lib/timeclock-adapter";
 import type {
   AttendanceStatus,
   Employee,
@@ -442,28 +436,24 @@ function shiftPayload(
 
 function RouteComponent() {
   const todayDateString = new Date().toLocaleDateString("en-CA");
-  const rawConvexLocations = useQuery(api.locations.listForCurrentUser) ?? [];
-  const convexLocations = rawConvexLocations.filter(
+  const rawConvexLocations = useQuery(api.locations.listForCurrentUser);
+  const convexLocations = (rawConvexLocations ?? []).filter(
     (loc): loc is NonNullable<typeof loc> => loc !== null,
   );
+  const isLoadingLocations = rawConvexLocations === undefined;
   const hasConvexLocations = convexLocations.length > 0;
 
-  const locations: Location[] = hasConvexLocations
-    ? convexLocations.map(mapConvexLocation)
-    : getLocations();
+  const locations: Location[] = convexLocations.map(mapConvexLocation);
 
   const [locationIndex, setLocationIndex] = useState(0);
   const [activeView, setActiveView] = useState<ManagerView>("today");
-  const [demoSchedule, setDemoSchedule] = useState(() =>
-    getScheduleWeek("loc-downtown" as LocationId),
-  );
 
   const safeIndex = Math.min(locationIndex, Math.max(0, locations.length - 1));
-  const activeLocation = locations[safeIndex] ?? getLocations()[0];
-  const effectiveLocationId = activeLocation.id;
+  const activeLocation = locations[safeIndex];
+  const effectiveLocationId = activeLocation?.id ?? "";
   const activeConvexLocation = hasConvexLocations ? convexLocations[safeIndex] : undefined;
   const convexLocationId = activeConvexLocation?.id ?? null;
-  const weekStartDate = getWeekStartDate(todayDateString, activeLocation.weekStart === "Monday" ? 1 : 0);
+  const weekStartDate = getWeekStartDate(todayDateString, activeLocation?.weekStart === "Sunday" ? 0 : 1);
   const nextWeekStartDate = addDays(weekStartDate, 7);
 
   const convexDashboard = useQuery(
@@ -511,20 +501,33 @@ function RouteComponent() {
   );
   const currentSchedule = currentWeek
     ? mapScheduleWeek(currentWeek, effectiveLocationId)
-    : demoSchedule;
+    : undefined;
   const schedule = nextWeek
     ? mapScheduleWeek(nextWeek, effectiveLocationId)
-    : demoSchedule;
+    : undefined;
   const positions = positionOptions(nextWeek ?? currentWeek, convexEmployees ?? []);
   const existingShiftIds = useMemo(
     () => new Set((nextWeek?.shifts ?? []).map((shift) => shift.id)),
     [nextWeek],
   );
 
-  const dashboardData: TodayDashboardData =
-    convexDashboard && currentWeek
+  const dashboardData: TodayDashboardData | undefined =
+    convexDashboard && currentWeek && activeLocation && currentSchedule
       ? mapDashboard(convexDashboard, activeLocation, currentSchedule)
-      : getTodayDashboard("loc-downtown" as LocationId);
+      : undefined;
+
+  if (isLoadingLocations) {
+    return <DashboardState title="Loading live data" detail="Connecting to the cloud Convex deployment." />;
+  }
+
+  if (!activeLocation || !convexLocationId) {
+    return (
+      <DashboardState
+        title="No live manager data"
+        detail="This dashboard only shows cloud data. Log in with a seeded manager or admin account, then refresh."
+      />
+    );
+  }
 
   return (
     <AppShell
@@ -538,106 +541,99 @@ function RouteComponent() {
       onViewChange={setActiveView}
     >
       {activeView === "today" && (
-        <TodayDashboard
-          data={dashboardData}
-          employees={employees}
-          onNavigate={(view) => setActiveView(view)}
-        />
+        dashboardData ? (
+          <TodayDashboard
+            data={dashboardData}
+            employees={employees ?? []}
+            onNavigate={(view) => setActiveView(view)}
+          />
+        ) : (
+          <DashboardState title="Loading today" detail="Fetching live schedule and attendance data." />
+        )
       )}
       {activeView === "schedule" && (
-        <ScheduleBuilder
-          schedule={schedule}
-          employees={employees}
-          positions={positions}
-          onScheduleChange={(updated) => {
-            setDemoSchedule(saveScheduleWeek(updated));
-          }}
-          onSaveShift={
-            convexLocationId && nextWeek
-              ? async (shift) => {
-                  try {
-                    await upsertShift({
-                      locationId: convexLocationId,
-                      ...shiftPayload(
-                        shift,
-                        schedule,
-                        nextWeek.timezone,
-                        positions,
-                        existingShiftIds,
-                      ),
-                    });
-                    toast.success(existingShiftIds.has(shift.id as Id<"shifts">) ? "Shift updated" : "Shift created");
-                  } catch (error) {
-                    toast.error(error instanceof Error ? error.message : "Shift save failed");
-                    throw error;
-                  }
-                }
-              : undefined
-          }
-          onDuplicateShift={
-            convexLocationId
-              ? async (shift) => {
-                  await duplicateShiftMutation({ shiftId: shift.id as Id<"shifts"> });
-                  toast.success("Shift duplicated");
-                }
-              : undefined
-          }
-          onDeleteShift={
-            convexLocationId
-              ? async (shiftId) => {
-                  await deleteShiftMutation({ shiftId: shiftId as Id<"shifts"> });
-                  toast.success("Shift deleted");
-                }
-              : undefined
-          }
-          onPublishSchedule={
-            convexLocationId
-              ? async () => {
-                  await publishWeek({ locationId: convexLocationId, weekStartDate: schedule.weekStartDate });
-                  toast.success("Schedule published");
-                }
-              : undefined
-          }
-        />
+        schedule && nextWeek ? (
+          <ScheduleBuilder
+            schedule={schedule}
+            employees={employees ?? []}
+            positions={positions}
+            onScheduleChange={() => {}}
+            onSaveShift={async (shift) => {
+              try {
+                await upsertShift({
+                  locationId: convexLocationId,
+                  ...shiftPayload(
+                    shift,
+                    schedule,
+                    nextWeek.timezone,
+                    positions,
+                    existingShiftIds,
+                  ),
+                });
+                toast.success(existingShiftIds.has(shift.id as Id<"shifts">) ? "Shift updated" : "Shift created");
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Shift save failed");
+                throw error;
+              }
+            }}
+            onDuplicateShift={async (shift) => {
+              await duplicateShiftMutation({ shiftId: shift.id as Id<"shifts"> });
+              toast.success("Shift duplicated");
+            }}
+            onDeleteShift={async (shiftId) => {
+              await deleteShiftMutation({ shiftId: shiftId as Id<"shifts"> });
+              toast.success("Shift deleted");
+            }}
+            onPublishSchedule={async () => {
+              await publishWeek({ locationId: convexLocationId, weekStartDate: schedule.weekStartDate });
+              toast.success("Schedule published");
+            }}
+          />
+        ) : (
+          <DashboardState title="Loading schedule" detail="Fetching the live schedule from Convex." />
+        )
       )}
       {activeView === "employees" && (
         <EmployeesView
           locationId={effectiveLocationId}
-          employees={employees}
-          onDeactivate={
-            convexLocationId
-              ? async (employeeId) => {
-                  await deactivateEmployee({
-                    locationId: convexLocationId,
-                    employeeId: employeeId as Id<"employees">,
-                  });
-                  toast.success("Employee deactivated");
-                }
-              : undefined
-          }
+          employees={employees ?? []}
+          onDeactivate={async (employeeId) => {
+            await deactivateEmployee({
+              locationId: convexLocationId,
+              employeeId: employeeId as Id<"employees">,
+            });
+            toast.success("Employee deactivated");
+          }}
         />
       )}
       {activeView === "reports" && (
         <ReportsView
           locationId={effectiveLocationId}
-          dailyRows={dailyReport ? mapDailyReport(dailyReport, effectiveLocationId) : undefined}
-          weeklyRows={weeklyReport ? mapWeeklyReport(weeklyReport, effectiveLocationId) : undefined}
+          dailyRows={dailyReport ? mapDailyReport(dailyReport, effectiveLocationId) : []}
+          weeklyRows={weeklyReport ? mapWeeklyReport(weeklyReport, effectiveLocationId) : []}
         />
       )}
       {activeView === "settings" && (
         <SettingsView
           locationId={effectiveLocationId}
           location={locationSettings ? mapConvexLocation(locationSettings) : activeLocation}
-          onSave={
-            convexLocationId
-              ? async (settings) => {
-                  await updateSettings({ locationId: convexLocationId, ...settings });
-                  toast.success("Settings saved");
-                }
-              : undefined
-          }
+          onSave={async (settings) => {
+            await updateSettings({ locationId: convexLocationId, ...settings });
+            toast.success("Settings saved");
+          }}
         />
       )}
     </AppShell>
+  );
+}
+
+function DashboardState({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="grid min-h-svh place-items-center bg-background px-6 text-foreground">
+      <div className="w-full max-w-md border p-6">
+        <h1 className="text-base font-semibold">{title}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{detail}</p>
+      </div>
+    </div>
   );
 }
