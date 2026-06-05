@@ -252,7 +252,6 @@ export function ScheduleBuilder({
             weekDates={weekDates}
             employees={employees}
             shifts={schedule.shifts}
-            openShiftCount={openShifts.length}
             onCellClick={openNew}
             onEditShift={openEdit}
             onDuplicateShift={duplicateShift}

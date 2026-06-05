@@ -12,6 +12,7 @@ import {
 } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 
 import { env } from "@timeclock/env/web";
 import appCss from "../index.css?url";
@@ -93,7 +94,9 @@ function RootDocument() {
             <HeadContent />
           </head>
           <body>
-            <Outlet />
+            <NuqsAdapter>
+              <Outlet />
+            </NuqsAdapter>
             <Toaster richColors />
             <Scripts />
           </body>

@@ -103,7 +103,20 @@ export function formatCompactTime(time: string): string {
   return `${hour}:${minutes}${meridiem}`;
 }
 
-/** e.g. "9am-5pm" for schedule shift cards */
+/** Full schedule label, e.g. "8:00 AM - 4:00 PM" */
+export function formatScheduleTimeRange(start: string, end: string): string {
+  return `${normalizeScheduleTime(start)} - ${normalizeScheduleTime(end)}`;
+}
+
+function normalizeScheduleTime(time: string): string {
+  const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) {
+    return time;
+  }
+  return `${match[1]}:${match[2]} ${match[3]!.toUpperCase()}`;
+}
+
+/** e.g. "9am-5pm" for compact mobile labels */
 export function formatCompactTimeRange(start: string, end: string): string {
   return `${formatCompactTime(start)}-${formatCompactTime(end)}`;
 }

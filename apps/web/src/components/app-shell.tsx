@@ -87,9 +87,6 @@ export function AppShell({
                   strokeWidth={active ? 2.2 : 1.8}
                 />
                 <span className="flex-1">{label}</span>
-                {active && (
-                  <span className="size-1.5 shrink-0 rounded-full bg-primary animate-in fade-in-0 duration-200" />
-                )}
               </button>
             );
           })}

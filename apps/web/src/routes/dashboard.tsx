@@ -21,31 +21,20 @@ import type {
 import { useAuth } from "@clerk/tanstack-react-start";
 import { api } from "@timeclock/backend/convex/_generated/api";
 import type { Id } from "@timeclock/backend/convex/_generated/dataModel";
+import {
+  dashboardSearchParams,
+  defaultManagerView,
+} from "@/lib/dashboard-search";
 import { Button } from "@timeclock/ui/components/button";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
+import { createStandardSchemaV1, useQueryStates } from "nuqs";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
 
-type DashboardSearch = {
-  view?: ManagerView;
-  location?: string;
-  week?: string;
-};
-
-const MANAGER_VIEWS: ManagerView[] = ["today", "schedule", "employees", "reports", "settings"];
-
-function isValidView(value: unknown): value is ManagerView {
-  return typeof value === "string" && MANAGER_VIEWS.includes(value as ManagerView);
-}
-
 export const Route = createFileRoute("/dashboard")({
-  validateSearch: (search: Record<string, unknown>): DashboardSearch => ({
-    view: isValidView(search.view) ? search.view : undefined,
-    location: typeof search.location === "string" ? search.location : undefined,
-    week: typeof search.week === "string" ? search.week : undefined,
-  }),
+  validateSearch: createStandardSchemaV1(dashboardSearchParams, { partialOutput: true }),
   beforeLoad: ({ context }) => {
     if (!context.userId) {
       throw redirect({
@@ -480,8 +469,10 @@ function shiftPayload(
 }
 
 function RouteComponent() {
-  const search = Route.useSearch();
-  const navigate = Route.useNavigate();
+  const [dashboardSearch, setDashboardSearch] = useQueryStates(dashboardSearchParams, {
+    history: "replace",
+    shallow: true,
+  });
   const auth = useAuth();
   const todayDateString = new Date().toLocaleDateString("en-CA");
   const isSignedIn = auth.isSignedIn === true;
@@ -505,24 +496,18 @@ function RouteComponent() {
 
   const locations: Location[] = convexLocations.map(mapConvexLocation);
 
-  const activeView: ManagerView = search.view ?? "today";
+  const activeView: ManagerView = dashboardSearch.view ?? defaultManagerView();
   const locationIndex = useMemo(() => {
-    if (search.location) {
-      const idx = locations.findIndex((loc) => loc.id === search.location);
+    if (dashboardSearch.location) {
+      const idx = locations.findIndex((loc) => loc.id === dashboardSearch.location);
       if (idx >= 0) {
         return idx;
       }
     }
     return 0;
-  }, [search.location, locations]);
-  const viewingWeekStart = search.week ?? null;
-
-  const updateSearch = (patch: Partial<DashboardSearch>) => {
-    navigate({
-      search: (prev) => ({ ...prev, ...patch }),
-      replace: true,
-    });
-  };
+  }, [dashboardSearch.location, locations]);
+  const viewingWeekStart = dashboardSearch.week ?? null;
+  const scheduleWeekCacheRef = useRef<ScheduleWeek | null>(null);
 
   const safeIndex = Math.min(locationIndex, Math.max(0, locations.length - 1));
   const activeLocation = locations[safeIndex];
@@ -548,6 +533,18 @@ function RouteComponent() {
     api.schedules.getWeek,
     convexLocationId
       ? { locationId: convexLocationId, weekStartDate: effectiveViewingWeek }
+      : "skip",
+  );
+  useQuery(
+    api.schedules.getWeek,
+    convexLocationId
+      ? { locationId: convexLocationId, weekStartDate: addDays(effectiveViewingWeek, -7) }
+      : "skip",
+  );
+  useQuery(
+    api.schedules.getWeek,
+    convexLocationId
+      ? { locationId: convexLocationId, weekStartDate: addDays(effectiveViewingWeek, 7) }
       : "skip",
   );
   const convexEmployees = useQuery(
@@ -659,7 +656,31 @@ function RouteComponent() {
   const currentSchedule = currentWeek
     ? mapScheduleWeek(currentWeek, effectiveLocationId)
     : undefined;
-  const schedule = viewingWeek ? mapScheduleWeek(viewingWeek, effectiveLocationId) : undefined;
+  const mappedViewingWeek = viewingWeek
+    ? mapScheduleWeek(viewingWeek, effectiveLocationId)
+    : null;
+  const viewingWeekMatches =
+    mappedViewingWeek?.weekStartDate === effectiveViewingWeek &&
+    viewingWeek?.weekStartDate === effectiveViewingWeek;
+  if (viewingWeekMatches && mappedViewingWeek) {
+    scheduleWeekCacheRef.current = mappedViewingWeek;
+  }
+  const scheduleWeekLoading = Boolean(
+    convexLocationId && activeView === "schedule" && (!viewingWeek || !viewingWeekMatches),
+  );
+  const schedule =
+    viewingWeekMatches && mappedViewingWeek
+      ? mappedViewingWeek
+      : scheduleWeekCacheRef.current?.weekStartDate === effectiveViewingWeek
+        ? scheduleWeekCacheRef.current
+        : mappedViewingWeek && scheduleWeekLoading
+          ? {
+              ...mappedViewingWeek,
+              id: `${effectiveLocationId}-${effectiveViewingWeek}`,
+              weekStartDate: effectiveViewingWeek,
+              shifts: [],
+            }
+          : (scheduleWeekCacheRef.current ?? mappedViewingWeek ?? undefined);
   const locationPositions = useMemo(() => convexPositions ?? [], [convexPositions]);
   const positions = useMemo(
     () =>
@@ -670,8 +691,11 @@ function RouteComponent() {
     [locationPositions],
   );
   const existingShiftIds = useMemo(
-    () => new Set((viewingWeek?.shifts ?? []).map((shift) => shift.id)),
-    [viewingWeek],
+    () =>
+      new Set(
+        (viewingWeekMatches ? (viewingWeek?.shifts ?? []) : []).map((shift) => shift.id),
+      ),
+    [viewingWeek, viewingWeekMatches],
   );
 
   const dashboardData: TodayDashboardData | undefined =
