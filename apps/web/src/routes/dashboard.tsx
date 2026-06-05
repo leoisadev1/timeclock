@@ -19,6 +19,7 @@ import type {
 } from "@/lib/timeclock-types";
 import { api } from "@timeclock/backend/convex/_generated/api";
 import type { Id } from "@timeclock/backend/convex/_generated/dataModel";
+import { Button } from "@timeclock/ui/components/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { useMemo, useState } from "react";
@@ -491,6 +492,7 @@ function RouteComponent() {
   const publishWeek = useMutation(api.schedules.publishWeek);
   const deactivateEmployee = useMutation(api.employees.deactivate);
   const updateSettings = useMutation(api.locations.updateSettings);
+  const claimDemoManager = useMutation(api.demo.claimDemoManager);
 
   const employees = useMemo(
     () =>
@@ -524,7 +526,16 @@ function RouteComponent() {
     return (
       <DashboardState
         title="No live manager data"
-        detail="This dashboard only shows cloud data. Log in with a seeded manager or admin account, then refresh."
+        detail="Your current Clerk login is not linked to a seeded manager record yet."
+        actionLabel="Use demo manager access"
+        onAction={async () => {
+          await claimDemoManager({
+            email: "manager@timeclock.demo",
+            password: "demo-manager",
+          });
+          toast.success("Demo manager access linked");
+          window.location.reload();
+        }}
       />
     );
   }
@@ -627,12 +638,36 @@ function RouteComponent() {
   );
 }
 
-function DashboardState({ title, detail }: { title: string; detail: string }) {
+function DashboardState({
+  title,
+  detail,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  detail: string;
+  actionLabel?: string;
+  onAction?: () => Promise<void>;
+}) {
   return (
     <div className="grid min-h-svh place-items-center bg-background px-6 text-foreground">
       <div className="w-full max-w-md border p-6">
         <h1 className="text-base font-semibold">{title}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{detail}</p>
+        {actionLabel && onAction ? (
+          <Button
+            className="mt-4"
+            onClick={async () => {
+              try {
+                await onAction();
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Could not link demo access");
+              }
+            }}
+          >
+            {actionLabel}
+          </Button>
+        ) : null}
       </div>
     </div>
   );

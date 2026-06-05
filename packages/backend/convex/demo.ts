@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { ensureDemoData } from "./seedData";
 import { getDemoCompany } from "./shared";
@@ -7,6 +7,37 @@ export const bootstrap = mutation({
   args: {},
   handler: async (ctx) => {
     return await ensureDemoData(ctx);
+  },
+});
+
+export const claimDemoManager = mutation({
+  args: { email: v.string(), password: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new ConvexError({ code: "NOT_AUTHENTICATED", message: "Sign in before claiming demo access." });
+    }
+    const employee = await ctx.db
+      .query("employees")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .unique();
+    if (
+      !employee ||
+      !employee.active ||
+      employee.demoPassword !== args.password ||
+      !["admin", "manager"].includes(employee.role)
+    ) {
+      throw new ConvexError({ code: "INVALID_DEMO_LOGIN", message: "Invalid demo manager credentials." });
+    }
+    await ctx.db.patch(employee._id, {
+      authTokenIdentifier: identity.tokenIdentifier,
+      updatedAt: Date.now(),
+    });
+    return {
+      employeeId: employee._id,
+      name: employee.displayName,
+      role: employee.role,
+    };
   },
 });
 
