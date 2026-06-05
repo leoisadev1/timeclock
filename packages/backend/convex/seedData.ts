@@ -208,6 +208,86 @@ const employees: EmployeeSeed[] = [
     active: true,
     locations: ["downtown"],
   },
+  {
+    firstName: "Emma",
+    lastName: "Walsh",
+    pin: "2461",
+    avatarUrl: "https://api.dicebear.com/9.x/adventurer/svg?seed=Emma",
+    role: "employee",
+    defaultPosition: "Barista",
+    active: true,
+    locations: ["downtown"],
+  },
+  {
+    firstName: "Brooke",
+    lastName: "Reed",
+    pin: "7935",
+    avatarUrl: "https://api.dicebear.com/9.x/adventurer/svg?seed=Brooke",
+    role: "employee",
+    defaultPosition: "Barista",
+    active: true,
+    locations: ["downtown"],
+  },
+  {
+    firstName: "Mateo",
+    lastName: "Lopez",
+    pin: "3570",
+    avatarUrl: "https://api.dicebear.com/9.x/adventurer/svg?seed=Mateo",
+    role: "employee",
+    defaultPosition: "Cook",
+    active: true,
+    locations: ["downtown"],
+  },
+  {
+    firstName: "Tess",
+    lastName: "Nguyen",
+    pin: "6842",
+    avatarUrl: "https://api.dicebear.com/9.x/adventurer/svg?seed=Tess",
+    role: "employee",
+    defaultPosition: "Shift Lead",
+    active: true,
+    locations: ["downtown"],
+  },
+  {
+    firstName: "Riley",
+    lastName: "Moore",
+    pin: "2784",
+    avatarUrl: "https://api.dicebear.com/9.x/adventurer/svg?seed=Riley",
+    role: "employee",
+    defaultPosition: "Server",
+    active: true,
+    locations: ["riverside"],
+  },
+  {
+    firstName: "Harper",
+    lastName: "Cole",
+    pin: "3495",
+    avatarUrl: "https://api.dicebear.com/9.x/adventurer/svg?seed=Harper",
+    role: "employee",
+    defaultPosition: "Cook",
+    active: true,
+    locations: ["riverside"],
+  },
+  {
+    firstName: "Quinn",
+    lastName: "Parker",
+    pin: "4568",
+    avatarUrl: "https://api.dicebear.com/9.x/adventurer/svg?seed=Quinn",
+    role: "employee",
+    defaultPosition: "Cashier",
+    active: true,
+    locations: ["riverside"],
+  },
+  {
+    firstName: "Sloane",
+    lastName: "Bennett",
+    pin: "5973",
+    avatarUrl: "https://api.dicebear.com/9.x/adventurer/svg?seed=Sloane",
+    role: "employee",
+    defaultPosition: "Cashier",
+    active: true,
+    locations: ["riverside"],
+  },
 ];
 
 async function upsertCompany(ctx: MutationCtx) {
@@ -467,6 +547,177 @@ async function insertShift(
   });
 }
 
+type ShiftTemplate = {
+  dayOfWeek: number;
+  startMinutes: number;
+  endMinutes: number;
+  position: string;
+  pin: string;
+  notes?: string;
+};
+
+const weeklyShiftTemplates: Record<string, ShiftTemplate[]> = {
+  downtown: [
+    { dayOfWeek: 1, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Manager", pin: "1002" },
+    { dayOfWeek: 1, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Barista", pin: "2145" },
+    { dayOfWeek: 1, startMinutes: 6 * 60 + 30, endMinutes: 14 * 60 + 30, position: "Cook", pin: "4729" },
+    { dayOfWeek: 1, startMinutes: 8 * 60, endMinutes: 16 * 60, position: "Cashier", pin: "3882" },
+    { dayOfWeek: 1, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Shift Lead", pin: "6842" },
+    { dayOfWeek: 1, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Barista", pin: "7935" },
+
+    { dayOfWeek: 2, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Barista", pin: "2461" },
+    { dayOfWeek: 2, startMinutes: 7 * 60, endMinutes: 15 * 60, position: "Cook", pin: "3570" },
+    { dayOfWeek: 2, startMinutes: 8 * 60, endMinutes: 16 * 60, position: "Cashier", pin: "9017" },
+    { dayOfWeek: 2, startMinutes: 10 * 60, endMinutes: 18 * 60, position: "Manager", pin: "1002" },
+    { dayOfWeek: 2, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Cashier", pin: "3882" },
+
+    { dayOfWeek: 3, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Manager", pin: "1002" },
+    { dayOfWeek: 3, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Barista", pin: "2145" },
+    { dayOfWeek: 3, startMinutes: 7 * 60, endMinutes: 15 * 60, position: "Cook", pin: "4729" },
+    { dayOfWeek: 3, startMinutes: 8 * 60, endMinutes: 16 * 60, position: "Cashier", pin: "3882" },
+    { dayOfWeek: 3, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Shift Lead", pin: "6842" },
+    { dayOfWeek: 3, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Barista", pin: "7935" },
+
+    { dayOfWeek: 4, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Barista", pin: "2461" },
+    { dayOfWeek: 4, startMinutes: 7 * 60, endMinutes: 15 * 60, position: "Cook", pin: "3570" },
+    { dayOfWeek: 4, startMinutes: 8 * 60, endMinutes: 16 * 60, position: "Cashier", pin: "9017" },
+    { dayOfWeek: 4, startMinutes: 10 * 60, endMinutes: 18 * 60, position: "Manager", pin: "1001" },
+    { dayOfWeek: 4, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Shift Lead", pin: "6842" },
+    { dayOfWeek: 4, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Barista", pin: "2145" },
+
+    { dayOfWeek: 5, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Manager", pin: "1002" },
+    { dayOfWeek: 5, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Barista", pin: "2145" },
+    { dayOfWeek: 5, startMinutes: 7 * 60, endMinutes: 15 * 60, position: "Cook", pin: "4729" },
+    { dayOfWeek: 5, startMinutes: 8 * 60, endMinutes: 16 * 60, position: "Cashier", pin: "3882" },
+    { dayOfWeek: 5, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Shift Lead", pin: "6842" },
+    { dayOfWeek: 5, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Barista", pin: "2461" },
+    { dayOfWeek: 5, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Cook", pin: "3570" },
+    { dayOfWeek: 5, startMinutes: 14 * 60, endMinutes: 20 * 60, position: "Cashier", pin: "9017" },
+
+    { dayOfWeek: 6, startMinutes: 7 * 60, endMinutes: 15 * 60, position: "Manager", pin: "1001" },
+    { dayOfWeek: 6, startMinutes: 7 * 60, endMinutes: 15 * 60, position: "Barista", pin: "2461" },
+    { dayOfWeek: 6, startMinutes: 7 * 60, endMinutes: 15 * 60, position: "Cook", pin: "3570" },
+    { dayOfWeek: 6, startMinutes: 9 * 60, endMinutes: 17 * 60, position: "Cashier", pin: "9017" },
+    { dayOfWeek: 6, startMinutes: 10 * 60, endMinutes: 18 * 60, position: "Shift Lead", pin: "6842" },
+    { dayOfWeek: 6, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Barista", pin: "2145" },
+    { dayOfWeek: 6, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Cook", pin: "4729" },
+    { dayOfWeek: 6, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Barista", pin: "7935" },
+
+    { dayOfWeek: 0, startMinutes: 8 * 60, endMinutes: 14 * 60, position: "Manager", pin: "1002" },
+    { dayOfWeek: 0, startMinutes: 8 * 60, endMinutes: 16 * 60, position: "Barista", pin: "7935" },
+    { dayOfWeek: 0, startMinutes: 8 * 60, endMinutes: 16 * 60, position: "Cook", pin: "4729" },
+    { dayOfWeek: 0, startMinutes: 10 * 60, endMinutes: 16 * 60, position: "Cashier", pin: "9017" },
+    { dayOfWeek: 0, startMinutes: 10 * 60, endMinutes: 16 * 60, position: "Shift Lead", pin: "6842" },
+  ],
+  riverside: [
+    { dayOfWeek: 1, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Manager", pin: "1003" },
+    { dayOfWeek: 1, startMinutes: 11 * 60, endMinutes: 18 * 60, position: "Server", pin: "6194" },
+    { dayOfWeek: 1, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Cook", pin: "7426" },
+    { dayOfWeek: 1, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Cashier", pin: "4568" },
+    { dayOfWeek: 1, startMinutes: 15 * 60, endMinutes: 21 * 60, position: "Shift Lead", pin: "5308" },
+    { dayOfWeek: 1, startMinutes: 16 * 60, endMinutes: 21 * 60, position: "Server", pin: "2784" },
+
+    { dayOfWeek: 2, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Shift Lead", pin: "5308" },
+    { dayOfWeek: 2, startMinutes: 11 * 60, endMinutes: 18 * 60, position: "Server", pin: "8651" },
+    { dayOfWeek: 2, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Cook", pin: "3495" },
+    { dayOfWeek: 2, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Cashier", pin: "5973" },
+    { dayOfWeek: 2, startMinutes: 13 * 60, endMinutes: 21 * 60, position: "Manager", pin: "1001" },
+    { dayOfWeek: 2, startMinutes: 16 * 60, endMinutes: 21 * 60, position: "Server", pin: "6194" },
+
+    { dayOfWeek: 3, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Manager", pin: "1003" },
+    { dayOfWeek: 3, startMinutes: 11 * 60, endMinutes: 18 * 60, position: "Server", pin: "2784" },
+    { dayOfWeek: 3, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Cook", pin: "7426" },
+    { dayOfWeek: 3, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Cashier", pin: "4568" },
+    { dayOfWeek: 3, startMinutes: 16 * 60, endMinutes: 21 * 60, position: "Server", pin: "8651" },
+
+    { dayOfWeek: 4, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Shift Lead", pin: "5308" },
+    { dayOfWeek: 4, startMinutes: 11 * 60, endMinutes: 18 * 60, position: "Server", pin: "6194" },
+    { dayOfWeek: 4, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Cook", pin: "3495" },
+    { dayOfWeek: 4, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Cashier", pin: "5973" },
+    { dayOfWeek: 4, startMinutes: 14 * 60, endMinutes: 22 * 60, position: "Manager", pin: "1003" },
+    { dayOfWeek: 4, startMinutes: 16 * 60, endMinutes: 22 * 60, position: "Server", pin: "2784" },
+
+    { dayOfWeek: 5, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Manager", pin: "1003" },
+    { dayOfWeek: 5, startMinutes: 11 * 60, endMinutes: 18 * 60, position: "Server", pin: "8651" },
+    { dayOfWeek: 5, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Cook", pin: "7426" },
+    { dayOfWeek: 5, startMinutes: 12 * 60, endMinutes: 20 * 60, position: "Cashier", pin: "4568" },
+    { dayOfWeek: 5, startMinutes: 15 * 60, endMinutes: 23 * 60, position: "Shift Lead", pin: "5308" },
+    { dayOfWeek: 5, startMinutes: 15 * 60, endMinutes: 23 * 60, position: "Cook", pin: "3495" },
+    { dayOfWeek: 5, startMinutes: 16 * 60, endMinutes: 23 * 60, position: "Server", pin: "6194" },
+    { dayOfWeek: 5, startMinutes: 17 * 60, endMinutes: 23 * 60, position: "Server", pin: "2784" },
+
+    { dayOfWeek: 6, startMinutes: 10 * 60, endMinutes: 16 * 60, position: "Manager", pin: "1001" },
+    { dayOfWeek: 6, startMinutes: 10 * 60, endMinutes: 17 * 60, position: "Server", pin: "6194" },
+    { dayOfWeek: 6, startMinutes: 10 * 60, endMinutes: 18 * 60, position: "Cook", pin: "3495" },
+    { dayOfWeek: 6, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Cashier", pin: "4568" },
+    { dayOfWeek: 6, startMinutes: 15 * 60, endMinutes: 23 * 60, position: "Shift Lead", pin: "5308" },
+    { dayOfWeek: 6, startMinutes: 15 * 60, endMinutes: 23 * 60, position: "Cook", pin: "7426" },
+    { dayOfWeek: 6, startMinutes: 16 * 60, endMinutes: 23 * 60, position: "Server", pin: "8651" },
+    { dayOfWeek: 6, startMinutes: 16 * 60, endMinutes: 23 * 60, position: "Server", pin: "2784" },
+
+    { dayOfWeek: 0, startMinutes: 10 * 60, endMinutes: 16 * 60, position: "Manager", pin: "1003" },
+    { dayOfWeek: 0, startMinutes: 10 * 60, endMinutes: 17 * 60, position: "Server", pin: "2784" },
+    { dayOfWeek: 0, startMinutes: 10 * 60, endMinutes: 18 * 60, position: "Cook", pin: "7426" },
+    { dayOfWeek: 0, startMinutes: 11 * 60, endMinutes: 19 * 60, position: "Cashier", pin: "5973" },
+    { dayOfWeek: 0, startMinutes: 13 * 60, endMinutes: 21 * 60, position: "Cook", pin: "3495" },
+    { dayOfWeek: 0, startMinutes: 15 * 60, endMinutes: 21 * 60, position: "Server", pin: "8651" },
+  ],
+};
+
+function templatesForLocation(locationKey: string, dayOfWeek: number) {
+  const templates = weeklyShiftTemplates[locationKey]?.filter(
+    (template) => template.dayOfWeek === dayOfWeek,
+  );
+  if (!templates?.length) {
+    throw new Error(`Missing weekly shift template for ${locationKey} day ${dayOfWeek}`);
+  }
+  return templates;
+}
+
+async function seedWeekShifts(
+  ctx: MutationCtx,
+  scheduleId: Id<"schedules">,
+  locationSeed: LocationSeed,
+  locationId: Id<"locations">,
+  weekStartDate: string,
+  positionsForLocation: Map<string, Id<"positions">>,
+  employeeIds: Map<string, Id<"employees">>,
+  seededShiftIds: Map<string, Id<"shifts">>,
+  today: string,
+) {
+  for (let day = 0; day < 7; day += 1) {
+    const date = addDays(weekStartDate, day);
+    const dayOfWeek = (locationSeed.weekStartDay + day) % 7;
+    for (const template of templatesForLocation(locationSeed.key, dayOfWeek)) {
+      const positionId = positionsForLocation.get(template.position);
+      if (!positionId) {
+        throw new Error(`Missing position ${template.position} for ${locationSeed.key}`);
+      }
+      const employeeId = employeeIds.get(template.pin);
+      if (!employeeId) {
+        throw new Error(`Missing employee with PIN ${template.pin}`);
+      }
+      const shiftId = await insertShift(
+        ctx,
+        scheduleId,
+        locationId,
+        locationSeed.timezone,
+        date,
+        template.startMinutes,
+        template.endMinutes,
+        positionId,
+        employeeId,
+        template.notes,
+      );
+      if (locationSeed.key === "downtown" && date === today) {
+        if (template.pin === "2145") seededShiftIds.set("samToday", shiftId);
+        if (template.pin === "3882") seededShiftIds.set("jordanToday", shiftId);
+        if (template.pin === "4729") seededShiftIds.set("linaToday", shiftId);
+      }
+    }
+  }
+}
+
 async function seedSchedules(
   ctx: MutationCtx,
   companyId: Id<"companies">,
@@ -492,142 +743,28 @@ async function seedSchedules(
     if (!positionsForLocation) {
       throw new Error(`Missing positions for ${locationSeed.key}`);
     }
-    for (let day = 0; day < 7; day += 1) {
-      const date = addDays(currentWeekStart, day);
-      const dayOfWeek = (locationSeed.weekStartDay + day) % 7;
-      if (dayOfWeek === 0 && locationSeed.key === "downtown") {
-        continue;
-      }
-      if (locationSeed.key === "downtown") {
-        const samShift = await insertShift(
-          ctx,
-          currentScheduleId,
-          locationId,
-          locationSeed.timezone,
-          date,
-          6 * 60,
-          14 * 60,
-          positionsForLocation.get("Barista")!,
-          employeeIds.get("2145"),
-        );
-        if (date === today) {
-          seededShiftIds.set("samToday", samShift);
-        }
-        const jordanShift = await insertShift(
-          ctx,
-          currentScheduleId,
-          locationId,
-          locationSeed.timezone,
-          date,
-          8 * 60,
-          16 * 60,
-          positionsForLocation.get("Cashier")!,
-          employeeIds.get("3882"),
-        );
-        if (date === today) {
-          seededShiftIds.set("jordanToday", jordanShift);
-        }
-        const linaShift = await insertShift(
-          ctx,
-          currentScheduleId,
-          locationId,
-          locationSeed.timezone,
-          date,
-          7 * 60,
-          15 * 60,
-          positionsForLocation.get("Cook")!,
-          employeeIds.get("4729"),
-        );
-        if (date === today) {
-          seededShiftIds.set("linaToday", linaShift);
-        }
-        await insertShift(
-          ctx,
-          currentScheduleId,
-          locationId,
-          locationSeed.timezone,
-          date,
-          12 * 60,
-          18 * 60,
-          positionsForLocation.get("Shift Lead")!,
-          employeeIds.get("5308"),
-        );
-        await insertShift(
-          ctx,
-          currentScheduleId,
-          locationId,
-          locationSeed.timezone,
-          date,
-          16 * 60,
-          20 * 60,
-          positionsForLocation.get("Barista")!,
-          undefined,
-          "Open closer coverage",
-        );
-      } else {
-        await insertShift(
-          ctx,
-          currentScheduleId,
-          locationId,
-          locationSeed.timezone,
-          date,
-          11 * 60,
-          18 * 60,
-          positionsForLocation.get("Server")!,
-          employeeIds.get("6194"),
-        );
-        await insertShift(
-          ctx,
-          currentScheduleId,
-          locationId,
-          locationSeed.timezone,
-          date,
-          12 * 60,
-          22 * 60,
-          positionsForLocation.get("Cook")!,
-          employeeIds.get("7426"),
-        );
-        await insertShift(
-          ctx,
-          currentScheduleId,
-          locationId,
-          locationSeed.timezone,
-          date,
-          17 * 60,
-          23 * 60,
-          positionsForLocation.get("Server")!,
-          employeeIds.get("8651"),
-        );
-      }
-    }
-
-    for (let day = 0; day < 7; day += 1) {
-      const date = addDays(nextWeekStart, day);
-      const serverOrBarista = locationSeed.key === "downtown" ? "Barista" : "Server";
-      await insertShift(
-        ctx,
-        nextScheduleId,
-        locationId,
-        locationSeed.timezone,
-        date,
-        8 * 60,
-        14 * 60,
-        positionsForLocation.get(serverOrBarista)!,
-        locationSeed.key === "downtown" ? employeeIds.get("2145") : employeeIds.get("6194"),
-      );
-      await insertShift(
-        ctx,
-        nextScheduleId,
-        locationId,
-        locationSeed.timezone,
-        date,
-        14 * 60,
-        20 * 60,
-        positionsForLocation.get(serverOrBarista)!,
-        undefined,
-        "Draft open shift",
-      );
-    }
+    await seedWeekShifts(
+      ctx,
+      currentScheduleId,
+      locationSeed,
+      locationId,
+      currentWeekStart,
+      positionsForLocation,
+      employeeIds,
+      seededShiftIds,
+      today,
+    );
+    await seedWeekShifts(
+      ctx,
+      nextScheduleId,
+      locationSeed,
+      locationId,
+      nextWeekStart,
+      positionsForLocation,
+      employeeIds,
+      new Map(),
+      "",
+    );
   }
   return seededShiftIds;
 }
@@ -739,9 +876,12 @@ async function seedTimecards(
   const yesterday = addDays(today, -1);
   await clearSeededTimecards(ctx, downtownLocationId, [today, yesterday]);
 
-  const samShift = await ctx.db.get(shiftIds.get("samToday")!);
-  const jordanShift = await ctx.db.get(shiftIds.get("jordanToday")!);
-  const linaShift = await ctx.db.get(shiftIds.get("linaToday")!);
+  const samTodayShiftId = shiftIds.get("samToday");
+  const jordanTodayShiftId = shiftIds.get("jordanToday");
+  const linaTodayShiftId = shiftIds.get("linaToday");
+  const samShift = samTodayShiftId ? await ctx.db.get(samTodayShiftId) : null;
+  const jordanShift = jordanTodayShiftId ? await ctx.db.get(jordanTodayShiftId) : null;
+  const linaShift = linaTodayShiftId ? await ctx.db.get(linaTodayShiftId) : null;
   if (samShift) {
     await insertTimecard(
       ctx,
