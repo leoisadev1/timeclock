@@ -46,16 +46,21 @@ export function ScheduleShiftCard({
   return (
     <article
       onClick={(event) => event.stopPropagation()}
-      className={`group relative flex w-full flex-col gap-2.5 rounded-lg border p-3 shadow-sm transition-[box-shadow,transform] duration-150 hover:shadow-md motion-press ${style.card}`}
+      className={`group relative flex w-full flex-col gap-1 rounded-md border px-2.5 py-2 shadow-sm transition-[box-shadow,transform] duration-150 hover:shadow-md motion-press ${style.card}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className={`text-sm font-semibold leading-snug ${style.title}`}>{shift.position}</h3>
+        <div className="min-w-0">
+          <p className={`truncate text-sm font-bold leading-snug tabular-nums ${style.title}`}>
+            {shift.start}–{shift.end}
+          </p>
+          <h3 className={`truncate text-sm font-medium leading-snug ${style.title}`}>{shift.position}</h3>
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger
-            className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background/60 hover:text-foreground group-hover:opacity-100 data-popup-open:opacity-100"
+            className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-background/60 hover:text-foreground group-hover:opacity-100 data-popup-open:opacity-100"
             aria-label="Shift actions"
           >
-            <EllipsisVerticalIcon className="size-4" />
+            <EllipsisVerticalIcon className="size-3.5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onEdit}>
@@ -95,7 +100,7 @@ export function ScheduleShiftCard({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1">
         {isOpen ? <Badge tone="neutral">Open shift</Badge> : null}
         {shift.overnight ? (
           <Badge tone="warning" className="gap-1">
@@ -111,12 +116,8 @@ export function ScheduleShiftCard({
         ) : null}
       </div>
 
-      <p className={`text-sm font-medium tabular-nums ${style.meta}`}>
-        {shift.start} – {shift.end}
-      </p>
-
       <footer
-        className={`flex flex-wrap items-center gap-3 border-t border-black/5 pt-2 text-[11px] dark:border-white/10 ${style.footer}`}
+        className={`flex flex-wrap items-center gap-2 text-[11px] dark:border-white/10 ${style.footer}`}
       >
         <span className="inline-flex items-center gap-1 tabular-nums">
           <ClockIcon className="size-3 opacity-70" />

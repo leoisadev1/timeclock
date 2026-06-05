@@ -7,16 +7,13 @@ import {
 } from "@/lib/timeclock-adapter";
 import type { Employee, ScheduleWeek, Shift } from "@/lib/timeclock-types";
 import { Badge } from "@timeclock/ui/components/badge";
-import { Button } from "@timeclock/ui/components/button";
 import { parseDate, toDateString } from "@timeclock/ui/components/calendar";
-import { PlusIcon, SendIcon, TriangleAlertIcon } from "lucide-react";
+import { TriangleAlertIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   getMondayWeekStart,
-  POSITION_CARD_STYLES,
   ScheduleMobileView,
-  SchedulePositionLegend,
   ScheduleTeamGrid,
   ScheduleWeekNav,
   type ScheduleDay,
@@ -64,7 +61,6 @@ export function ScheduleBuilder({
     0,
   );
   const warnings = schedule.shifts.filter((s) => s.warning && s.warning !== "open-shift");
-  const coverage = useMemo(() => buildCoverage(schedule.shifts), [schedule.shifts]);
   const openShifts = schedule.shifts.filter((s) => !s.employeeId);
   const isCurrentWeek =
     schedule.weekStartDate === getMondayWeekStart(toDateString(new Date()));
@@ -156,8 +152,8 @@ export function ScheduleBuilder({
     .join(" · ");
 
   return (
-    <div className="grid gap-5">
-      <header className="flex flex-wrap items-start justify-between gap-3">
+    <div className="grid gap-4">
+      <header className="flex flex-wrap items-start justify-between gap-3 lg:hidden">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">Schedule</h1>
@@ -170,68 +166,10 @@ export function ScheduleBuilder({
             {openShifts.length} open shifts
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={openNew}>
-            <PlusIcon />
-            Add shift
-          </Button>
-          <Button
-            variant={schedule.published ? "outline" : "default"}
-            onClick={async () => {
-              if (onPublishSchedule) {
-                await onPublishSchedule();
-                return;
-              }
-              onScheduleChange({
-                ...schedule,
-                published: !schedule.published,
-                publishedAt: !schedule.published ? new Date().toISOString() : undefined,
-                updatedAt: new Date().toISOString(),
-              });
-              toast.success(
-                schedule.published
-                  ? "Schedule unpublished"
-                  : "Schedule published — employees can now see it",
-              );
-            }}
-          >
-            <SendIcon />
-            {schedule.published ? "Unpublish" : "Publish schedule"}
-          </Button>
-        </div>
       </header>
 
-      <section className={`grid gap-4 ${warnings.length > 0 ? "md:grid-cols-2" : ""}`}>
-        <div className="rounded-xl bg-card shadow-sm ring-1 ring-border">
-          <div className="border-b border-border px-4 py-3">
-            <h2 className="text-sm font-semibold">Coverage</h2>
-            <p className="text-xs text-muted-foreground">
-              {totalHours.toFixed(1)}h total scheduled
-            </p>
-          </div>
-          <div className="divide-y divide-border px-1 py-1">
-            {coverage.map((item) => (
-              <div key={item.key} className="flex items-center justify-between gap-3 px-3 py-2">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span
-                    className={`size-2 shrink-0 rounded-full ${
-                      POSITION_CARD_STYLES[item.position]?.dot ?? "bg-muted-foreground"
-                    }`}
-                  />
-                  <span className="truncate text-xs">{item.position}</span>
-                </div>
-                <span className="text-xs tabular-nums text-muted-foreground">
-                  {item.hours.toFixed(1)}h
-                </span>
-              </div>
-            ))}
-            {coverage.length === 0 ? (
-              <p className="px-3 py-3 text-xs text-muted-foreground">No shifts yet.</p>
-            ) : null}
-          </div>
-        </div>
-
-        {warnings.length > 0 ? (
+      {warnings.length > 0 ? (
+        <section className="lg:hidden">
           <div className="rounded-xl bg-card shadow-sm ring-1 ring-border">
             <div className="border-b border-border px-4 py-3">
               <div className="flex items-center gap-2">
@@ -253,8 +191,8 @@ export function ScheduleBuilder({
               ))}
             </div>
           </div>
-        ) : null}
-      </section>
+        </section>
+      ) : null}
 
       <div className={`hidden lg:block ${surfaceClass}`}>
         <ScheduleWeekNav
@@ -268,8 +206,26 @@ export function ScheduleBuilder({
           onNextWeek={() => navigateWeek(1)}
           onJumpToCurrentWeek={jumpToCurrentWeek}
           onPickWeek={jumpToWeek}
+          onAddShift={openNew}
+          onPublishSchedule={async () => {
+            if (onPublishSchedule) {
+              await onPublishSchedule();
+              return;
+            }
+            onScheduleChange({
+              ...schedule,
+              published: !schedule.published,
+              publishedAt: !schedule.published ? new Date().toISOString() : undefined,
+              updatedAt: new Date().toISOString(),
+            });
+            toast.success(
+              schedule.published
+                ? "Schedule unpublished"
+                : "Schedule published — employees can now see it",
+            );
+          }}
+          published={schedule.published}
         />
-        <SchedulePositionLegend />
         <ScheduleTeamGrid
           weekDates={weekDates}
           employees={employees}
@@ -318,16 +274,4 @@ function addDaysLocal(date: string, days: number): string {
   const parsed = parseDate(date);
   parsed.setDate(parsed.getDate() + days);
   return toDateString(parsed);
-}
-
-function buildCoverage(shifts: Shift[]) {
-  const totals = new Map<Shift["position"], number>();
-  for (const shift of shifts) {
-    totals.set(shift.position, (totals.get(shift.position) ?? 0) + calculateShiftHours(shift));
-  }
-  return [...totals.entries()].map(([position, hours]) => ({
-    key: position,
-    position,
-    hours,
-  }));
 }
