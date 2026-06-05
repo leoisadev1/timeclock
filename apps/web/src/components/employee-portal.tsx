@@ -1,8 +1,10 @@
 import { LocationSwitcher } from "@/components/location-switcher";
+import { PortalShell } from "@/components/portal-shell";
+import { SamplePinHints } from "@/components/sample-pin-hints";
+import { usePortalLocations } from "@/hooks/use-portal-locations";
 import {
   describeClockAction,
   getEmployeePortal,
-  getLocations,
   getNextStatus,
   warningLabel,
 } from "@/lib/timeclock-adapter";
@@ -19,24 +21,8 @@ import { Button } from "@timeclock/ui/components/button";
 import { Skeleton } from "@timeclock/ui/components/skeleton";
 import { useMutation, useQuery } from "convex/react";
 import { CalendarDaysIcon, Clock3Icon, LogOutIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-
-// ─── Unified location shape ────────────────────────────────────────────────
-
-type ConvexLocation = {
-  id: Id<"locations">;
-  name: string;
-  isConvex: true;
-};
-
-type DemoLocation = {
-  id: LocationId;
-  name: string;
-  isConvex: false;
-};
-
-type UnifiedLocation = ConvexLocation | DemoLocation;
 
 // ─── Convex employee shape (from getByPinForLocation) ─────────────────────
 
@@ -79,11 +65,11 @@ function PinKeypad({
 
   return (
     <div className="grid gap-3">
-      <div className="flex justify-center gap-2">
+      <div className="flex justify-center gap-2.5">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className={`flex size-12 items-center justify-center rounded-2xl text-xl font-mono ring-2 transition-[background-color,ring-color] duration-150 ${
+            className={`flex size-12 items-center justify-center rounded-2xl text-xl font-mono ring-2 transition-[background-color,ring-color] duration-150 sm:size-14 sm:text-2xl ${
               i < pin.length ? "bg-primary/10 text-primary ring-primary" : "bg-muted/30 ring-border"
             }`}
           >
@@ -92,14 +78,14 @@ function PinKeypad({
         ))}
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
         {keys.map((key) => (
           <button
             key={key}
             type="button"
             onClick={() => onKey(key)}
             disabled={key === "→" && pin.length !== 4}
-            className={`flex h-12 items-center justify-center rounded-2xl text-sm font-semibold transition-[background-color,transform,opacity] duration-150 active:scale-[0.98] ${
+            className={`flex min-h-12 items-center justify-center rounded-2xl text-base font-semibold transition-[background-color,transform,opacity] duration-150 active:scale-[0.98] sm:min-h-14 sm:text-lg ${
               key === "→"
                 ? pin.length === 4
                   ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
@@ -118,42 +104,6 @@ function PinKeypad({
           {error}
         </Badge>
       ) : null}
-    </div>
-  );
-}
-
-// ─── Demo hint chips ───────────────────────────────────────────────────────
-
-function DemoHints({ onSelect }: { onSelect: (pin: string) => void }) {
-  const demoLogin = useQuery(api.demo.getDemoLogin);
-
-  if (!demoLogin?.employeePins?.length) {
-    return null;
-  }
-
-  return (
-    <div className="mt-3 grid gap-1.5">
-      <p className="text-xs text-muted-foreground">Try a sample PIN:</p>
-      <div className="flex flex-wrap gap-1">
-        {demoLogin.employeePins.slice(0, 4).map((emp) => (
-          <button
-            key={emp.employeeId}
-            type="button"
-            onClick={() => onSelect(emp.pin)}
-            className="flex items-center gap-1.5 rounded-xl bg-card px-2.5 py-1.5 text-xs font-medium ring-1 ring-border transition-colors duration-150 hover:bg-muted/50 active:scale-[0.98]"
-          >
-            {emp.avatarUrl ? (
-              <img
-                src={emp.avatarUrl}
-                alt={emp.name}
-                className="size-4 rounded-full object-cover"
-              />
-            ) : null}
-            <span>{emp.name}</span>
-            <span className="font-mono text-muted-foreground">{emp.pin}</span>
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
@@ -505,24 +455,23 @@ function DemoWorkspace({
 // ─── PIN panel ─────────────────────────────────────────────────────────────
 
 function PinPanel({
-  locations,
+  switcherLocations,
   locationId,
+  hasConvex,
   onLocationChange,
   onSession,
 }: {
-  locations: UnifiedLocation[];
+  switcherLocations: ReturnType<typeof usePortalLocations>["switcherLocations"];
   locationId: string;
+  hasConvex: boolean;
   onLocationChange: (id: string) => void;
   onSession: (session: Session) => void;
 }) {
   const [pin, setPin] = useState("");
   const [submittedPin, setSubmittedPin] = useState("");
   const [error, setError] = useState<string | undefined>();
+  const handledLookupRef = useRef<string | null>(null);
 
-  const selectedLocation = locations.find((l) => l.id === locationId);
-  const hasConvex = selectedLocation?.isConvex ?? false;
-
-  // Convex query — only runs when hasConvex and submittedPin is 4 digits
   const convexEmployee = useQuery(
     api.employees.getByPinForLocation,
     hasConvex && submittedPin.length === 4
@@ -530,16 +479,40 @@ function PinPanel({
       : "skip",
   );
 
-  // React to Convex query result
   const isLoading = hasConvex && submittedPin.length === 4 && convexEmployee === undefined;
 
-  // When Convex resolves
-  if (hasConvex && submittedPin.length === 4 && convexEmployee !== undefined) {
-    if (convexEmployee) {
-      // Found — create session (will be handled by parent via onSession)
-      // We call onSession once; guard against re-calling on re-renders using the pin match
+  useEffect(() => {
+    if (!hasConvex || submittedPin.length !== 4 || convexEmployee === undefined) {
+      return;
     }
-  }
+    const lookupKey = `${locationId}:${submittedPin}`;
+    if (handledLookupRef.current === lookupKey) {
+      return;
+    }
+    handledLookupRef.current = lookupKey;
+
+    if (convexEmployee) {
+      onSession({
+        kind: "convex",
+        employee: {
+          id: convexEmployee.id as Id<"employees">,
+          displayName: convexEmployee.displayName,
+          avatarUrl: convexEmployee.avatarUrl,
+          positionName: convexEmployee.positionName,
+          role: convexEmployee.role,
+        },
+        locationId: locationId as Id<"locations">,
+      });
+      setPin("");
+      setSubmittedPin("");
+      setError(undefined);
+      toast.success(`${convexEmployee.displayName} signed in`);
+      return;
+    }
+
+    setError("Wrong PIN or not assigned to this location.");
+    setSubmittedPin("");
+  }, [hasConvex, submittedPin, convexEmployee, locationId, onSession]);
 
   function handleKey(key: string) {
     if (key === "⌫") {
@@ -559,61 +532,24 @@ function PinPanel({
 
   function submitPin(submitting: string) {
     setError(undefined);
+    handledLookupRef.current = null;
     if (hasConvex) {
       setSubmittedPin(submitting);
-      // The useQuery above will fire; we need to watch the result
-      // We set submittedPin and the effect below handles session creation
+      return;
+    }
+    const result = getEmployeePortal(submitting, locationId as LocationId);
+    if ("employee" in result) {
+      toast.success(`${result.employee.name} signed in`);
+      onSession({ kind: "demo", portal: result, status: result.status });
+      setPin("");
+      setSubmittedPin("");
     } else {
-      // Demo path
-      const result = getEmployeePortal(submitting, locationId as LocationId);
-      if ("employee" in result) {
-        toast.success(`${result.employee.name} signed in`);
-        onSession({ kind: "demo", portal: result, status: result.status });
-        setPin("");
-        setSubmittedPin("");
-      } else {
-        setError(result.errors[0]);
-      }
+      setError(result.errors[0]);
     }
   }
-
-  // Handle Convex result after query resolves
-  // We use a derived variable + render-time effect pattern (no useEffect needed,
-  // since Convex is reactive — we just detect the transition in render)
-  const convexResolved = hasConvex && submittedPin.length === 4 && convexEmployee !== undefined;
-
-  if (convexResolved) {
-    if (convexEmployee) {
-      // Schedule session creation after render via timeout 0 to avoid setState during render
-      setTimeout(() => {
-        onSession({
-          kind: "convex",
-          employee: {
-            id: convexEmployee.id as Id<"employees">,
-            displayName: convexEmployee.displayName,
-            avatarUrl: convexEmployee.avatarUrl,
-            positionName: convexEmployee.positionName,
-            role: convexEmployee.role,
-          },
-          locationId: locationId as Id<"locations">,
-        });
-        setPin("");
-        setSubmittedPin("");
-        toast.success(`${convexEmployee.displayName} signed in`);
-      }, 0);
-    } else if (!error) {
-      setTimeout(() => {
-        setError("Wrong PIN or not assigned to this location.");
-        setSubmittedPin("");
-      }, 0);
-    }
-  }
-
-  // Build LocationSwitcher-compatible location list (demo shape)
-  const demoLocations = getLocations();
 
   return (
-    <div className="rounded-xl bg-card p-4 shadow-sm ring-1 ring-border">
+    <div className="overflow-hidden rounded-xl bg-muted/20 p-4 ring-1 ring-border lg:sticky lg:top-0">
       <h2 className="text-sm font-semibold tracking-tight">Clock in with your PIN</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Choose your location, then enter your 4-digit employee PIN.
@@ -621,13 +557,14 @@ function PinPanel({
 
       <div className="mt-3 mb-4">
         <LocationSwitcher
-          locations={demoLocations}
-          value={(locationId as LocationId) || demoLocations[0]?.id}
+          locations={switcherLocations}
+          value={(locationId as LocationId) || switcherLocations[0]?.id}
           onChange={(id) => {
             onLocationChange(id);
             setPin("");
             setSubmittedPin("");
             setError(undefined);
+            handledLookupRef.current = null;
           }}
         />
       </div>
@@ -646,7 +583,12 @@ function PinPanel({
         <PinKeypad pin={pin} onKey={handleKey} error={error} />
       )}
 
-      <DemoHints onSelect={(p) => setPin(p)} />
+      <SamplePinHints
+        onSelect={(p) => setPin(p)}
+        enabled
+        convexLocationId={hasConvex ? (locationId as Id<"locations">) : undefined}
+        demoLocationId={!hasConvex ? (locationId as LocationId) : undefined}
+      />
     </div>
   );
 }
@@ -654,18 +596,12 @@ function PinPanel({
 // ─── Root component ────────────────────────────────────────────────────────
 
 export function EmployeePortal() {
-  const convexLocations = useQuery(api.locations.listForCurrentUser);
-  const demoLocations = getLocations();
-
-  const hasConvex = Array.isArray(convexLocations) && convexLocations.length > 0;
-
-  const locations: UnifiedLocation[] = hasConvex
-    ? convexLocations
-        .filter((l): l is NonNullable<typeof l> => l !== null)
-        .map((l) => ({ id: l.id, name: l.name, isConvex: true as const }))
-    : demoLocations.map((l) => ({ id: l.id, name: l.name, isConvex: false as const }));
-
-  const [locationId, setLocationId] = useState<string>(() => locations[0]?.id ?? "loc-downtown");
+  const {
+    switcherLocations,
+    locationId,
+    setLocationId,
+    hasConvex,
+  } = usePortalLocations();
 
   const [session, setSession] = useState<Session | undefined>();
 
@@ -678,54 +614,47 @@ export function EmployeePortal() {
   }
 
   return (
-    <main className="min-h-svh bg-background text-foreground">
-      <div className="mx-auto max-w-5xl px-4 py-6">
-        <header className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <Badge tone="primary">Employee view</Badge>
-            <h1 className="mt-2 text-xl font-semibold tracking-tight">Employee clock-in</h1>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Use your PIN to clock in, take breaks, clock out, and see your published shifts.
-            </p>
-          </div>
-        </header>
+    <PortalShell
+      mode="employee"
+      title="Employee clock-in"
+      subtitle="Enter your PIN to clock in, take breaks, clock out, and view your schedule."
+    >
+      <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
+        <PinPanel
+          switcherLocations={switcherLocations}
+          locationId={locationId}
+          hasConvex={hasConvex}
+          onLocationChange={setLocationId}
+          onSession={(s) => setSession(s)}
+        />
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
-          <PinPanel
-            locations={locations}
-            locationId={locationId}
-            onLocationChange={setLocationId}
-            onSession={(s) => setSession(s)}
-          />
-
-          {session ? (
-            session.kind === "convex" ? (
-              <ConvexWorkspace
-                employee={session.employee}
-                locationId={session.locationId}
-                onSignOut={() => setSession(undefined)}
-              />
-            ) : (
-              <DemoWorkspace
-                portal={session.portal}
-                status={session.status}
-                onPunch={handlePunch}
-                onSignOut={() => setSession(undefined)}
-              />
-            )
+        {session ? (
+          session.kind === "convex" ? (
+            <ConvexWorkspace
+              employee={session.employee}
+              locationId={session.locationId}
+              onSignOut={() => setSession(undefined)}
+            />
           ) : (
-            <div className="grid min-h-80 place-items-center rounded-xl bg-muted/20 p-6 text-center ring-1 ring-border">
-              <div>
-                <Clock3Icon className="mx-auto size-8 text-muted-foreground" strokeWidth={1.8} />
-                <p className="mt-3 text-sm font-medium">No employee signed in</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Enter the 4-digit PIN for an active employee at this location.
-                </p>
-              </div>
+            <DemoWorkspace
+              portal={session.portal}
+              status={session.status}
+              onPunch={handlePunch}
+              onSignOut={() => setSession(undefined)}
+            />
+          )
+        ) : (
+          <div className="grid min-h-48 place-items-center rounded-xl bg-muted/20 p-6 text-center ring-1 ring-border md:min-h-80">
+            <div>
+              <Clock3Icon className="mx-auto size-8 text-muted-foreground" strokeWidth={1.8} />
+              <p className="mt-3 text-sm font-medium">No employee signed in</p>
+              <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+                Choose your location and enter your 4-digit PIN.
+              </p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-    </main>
+    </PortalShell>
   );
 }

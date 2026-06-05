@@ -51,12 +51,14 @@ export function ScheduleShiftCard({
     return (
       <article
         onClick={(event) => event.stopPropagation()}
-        className={`group relative w-full shrink-0 overflow-hidden rounded-[3px] border px-2.5 py-2 pr-6 text-left shadow-none transition-shadow hover:shadow-sm ${style.card}`}
+        className={`group relative box-border w-full min-w-0 shrink-0 rounded-[3px] border px-2 py-2 pb-2.5 pl-2.5 text-left shadow-none transition-shadow hover:shadow-sm ${style.card}`}
       >
-        <p className={`truncate text-[11px] font-semibold leading-tight tabular-nums ${style.title}`}>
+        <p
+          className={`w-full pr-5 text-[10.5px] font-semibold leading-snug tracking-tight tabular-nums ${style.title}`}
+        >
           {formatScheduleTimeRange(shift.start, shift.end)}
         </p>
-        <p className={`mt-1 truncate text-[11px] font-normal leading-tight ${style.meta}`}>
+        <p className={`mt-1 w-full pr-5 text-[11px] font-normal leading-snug ${style.meta}`}>
           {shift.position}
         </p>
         <ShiftActionsMenu onEdit={onEdit} onDuplicate={onDuplicate} onDelete={onDelete} compact />

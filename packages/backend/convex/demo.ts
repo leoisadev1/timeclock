@@ -6,6 +6,7 @@ import type { MutationCtx } from "./_generated/server";
 import {
   getCurrentEmployee,
   getDemoCompany,
+  isEmployeeAssignedToLocation,
   requireDemoCompany,
   type ReaderCtx,
 } from "./shared";
@@ -306,8 +307,10 @@ export const claimDemoManager = mutation({
 });
 
 export const getDemoLogin = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    locationId: v.optional(v.id("locations")),
+  },
+  handler: async (ctx, args) => {
     const company = await getDemoCompany(ctx);
     if (!company) {
       return {
@@ -328,12 +331,22 @@ export const getDemoLogin = query({
         q.eq("companyId", company._id).eq("role", "manager"),
       )
       .take(5);
-    const employees = await ctx.db
+    let employees = await ctx.db
       .query("employees")
       .withIndex("by_companyId_and_role", (q) =>
         q.eq("companyId", company._id).eq("role", "employee"),
       )
       .take(50);
+
+    if (args.locationId) {
+      const assigned: typeof employees = [];
+      for (const employee of employees) {
+        if (await isEmployeeAssignedToLocation(ctx, employee._id, args.locationId)) {
+          assigned.push(employee);
+        }
+      }
+      employees = assigned;
+    }
 
     const credential = (employee: (typeof admins)[number] | undefined) =>
       employee

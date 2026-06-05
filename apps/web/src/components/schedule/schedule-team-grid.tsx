@@ -12,7 +12,7 @@ import { cn } from "@timeclock/ui/lib/utils";
 import type { ReactNode } from "react";
 
 const TEAM_COLUMN_WIDTH = "13rem";
-const DAY_COLUMN_WIDTH = "9.5rem";
+const DAY_COLUMN_WIDTH = "minmax(12.25rem, 1fr)";
 const CELL_HEIGHT = "7.75rem";
 
 type WeekDate = { day: ScheduleDay; iso: string };

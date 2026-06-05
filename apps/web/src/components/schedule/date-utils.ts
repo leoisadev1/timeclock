@@ -103,9 +103,9 @@ export function formatCompactTime(time: string): string {
   return `${hour}:${minutes}${meridiem}`;
 }
 
-/** Full schedule label, e.g. "8:00 AM - 4:00 PM" */
+/** Full schedule label, e.g. "8:00 AM - 4:00 PM" (narrow spaces for grid fit) */
 export function formatScheduleTimeRange(start: string, end: string): string {
-  return `${normalizeScheduleTime(start)} - ${normalizeScheduleTime(end)}`;
+  return `${normalizeScheduleTime(start)}\u00a0-\u00a0${normalizeScheduleTime(end)}`;
 }
 
 function normalizeScheduleTime(time: string): string {
