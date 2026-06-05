@@ -27,9 +27,9 @@ export function EmployeesView({
 
   return (
     <div className="grid gap-4">
-      <header className="flex flex-col gap-3 border-b pb-4 md:flex-row md:items-end md:justify-between">
+      <header className="flex animate-in fade-in-0 flex-col gap-3 duration-200 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Employees</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Employees</h1>
           <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
             Active team roster scoped to the selected location, with role, position, PIN treatment,
             and assignment state.
@@ -45,38 +45,39 @@ export function EmployeesView({
         </Button>
       </header>
 
-      <div className="flex items-center justify-between border px-3 py-2">
-        <p className="text-xs text-muted-foreground">{employees.length} assigned employees</p>
-        <label className="flex items-center gap-2 text-xs">
+      <div className="flex items-center justify-between rounded-xl bg-muted/30 px-4 py-2.5 ring-1 ring-border">
+        <p className="text-sm text-muted-foreground">{employees.length} assigned employees</p>
+        <label className="flex cursor-pointer items-center gap-2 text-sm font-medium transition-colors duration-150 hover:text-foreground">
           <input
             type="checkbox"
             checked={showPin}
             onChange={(event) => setShowPin(event.target.checked)}
+            className="accent-primary"
           />
           Show PINs
         </label>
       </div>
 
-      <div className="overflow-x-auto border">
+      <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border">
         <table className="w-full min-w-[780px] border-collapse text-left text-xs">
           <thead className="bg-muted/40 text-muted-foreground">
             <tr>
-              <th className="border-b px-3 py-2 font-medium">Employee</th>
-              <th className="border-b px-3 py-2 font-medium">Role</th>
-              <th className="border-b px-3 py-2 font-medium">Position</th>
-              <th className="border-b px-3 py-2 font-medium">PIN</th>
-              <th className="border-b px-3 py-2 font-medium">Status</th>
-              <th className="border-b px-3 py-2 font-medium">Locations</th>
-              <th className="border-b px-3 py-2 font-medium">Actions</th>
+              <th className="px-3 py-2.5 font-medium">Employee</th>
+              <th className="px-3 py-2.5 font-medium">Role</th>
+              <th className="px-3 py-2.5 font-medium">Position</th>
+              <th className="px-3 py-2.5 font-medium">PIN</th>
+              <th className="px-3 py-2.5 font-medium">Status</th>
+              <th className="px-3 py-2.5 font-medium">Locations</th>
+              <th className="px-3 py-2.5 font-medium">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-border/60">
             {employees.map((employee) => (
               <tr
                 key={employee.id}
-                className="border-b last:border-b-0 hover:bg-muted/30 transition-colors duration-150"
+                className="transition-colors duration-150 hover:bg-muted/30"
               >
-                <td className="px-3 py-2">
+                <td className="px-3 py-2.5">
                   <div className="flex items-center gap-2">
                     <span
                       className={`flex size-7 shrink-0 items-center justify-center rounded-full ${employee.avatarColor} text-[11px] font-semibold text-white`}
@@ -86,16 +87,18 @@ export function EmployeesView({
                     <span className="font-medium">{employee.name}</span>
                   </div>
                 </td>
-                <td className="px-3 py-2 capitalize">{employee.role}</td>
-                <td className="px-3 py-2">{employee.position}</td>
-                <td className="px-3 py-2 font-mono">{showPin ? employee.pin : "••••"}</td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-2.5 capitalize">{employee.role}</td>
+                <td className="px-3 py-2.5">{employee.position}</td>
+                <td className="px-3 py-2.5 font-mono tabular-nums">
+                  {showPin ? employee.pin : "••••"}
+                </td>
+                <td className="px-3 py-2.5">
                   <Badge tone={employee.active ? "success" : "danger"}>
                     {employee.active ? "Active" : "Inactive"}
                   </Badge>
                 </td>
-                <td className="px-3 py-2">{employee.assignedLocationIds.length}</td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-2.5 tabular-nums">{employee.assignedLocationIds.length}</td>
+                <td className="px-3 py-2.5">
                   <div className="flex gap-1">
                     <Button
                       variant="outline"
@@ -125,15 +128,14 @@ export function EmployeesView({
         </table>
       </div>
 
-      {/* Edit modal overlay */}
       {editing ? (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm animate-in fade-in-0 duration-150"
+          className="fixed inset-0 z-50 grid animate-in fade-in-0 place-items-center bg-background/80 backdrop-blur-sm duration-150"
           onClick={(event) => {
             if (event.target === event.currentTarget) setEditing(undefined);
           }}
         >
-          <div className="w-full max-w-md border bg-background shadow-xl p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+          <div className="w-full max-w-md animate-in fade-in-0 slide-in-from-bottom-4 rounded-2xl bg-card p-6 shadow-2xl ring-1 ring-border duration-200">
             <h2 className="mb-3 text-sm font-semibold">
               {editing === "new" ? "Add employee" : `Edit: ${editingEmployee?.name ?? ""}`}
             </h2>

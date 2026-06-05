@@ -20,24 +20,27 @@ export function ReportsView({
       : (weeklyRows ?? getWeeklyReport(locationId));
 
   return (
-    <div className="grid gap-4">
-      <header className="flex flex-col gap-3 border-b pb-4 md:flex-row md:items-end md:justify-between">
+    <div className="grid gap-5">
+      <header className="flex animate-in fade-in-0 flex-wrap items-start justify-between gap-3 duration-200">
         <div>
-          <h1 className="text-xl font-semibold">Reports</h1>
-          <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-            In-app timesheet detail and weekly scheduled-versus-actual variance. CSV export stays
-            deferred.
+          <h1 className="text-xl font-semibold tracking-tight">Reports</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Timesheet detail and scheduled-versus-actual variance.
           </p>
         </div>
-        <div className="flex border">
+        <div className="flex gap-1 rounded-full bg-muted p-1 ring-1 ring-border">
           <Button
             variant={view === "daily" ? "default" : "ghost"}
+            size="sm"
+            className="rounded-full transition-colors duration-150"
             onClick={() => setView("daily")}
           >
             Daily
           </Button>
           <Button
             variant={view === "weekly" ? "default" : "ghost"}
+            size="sm"
+            className="rounded-full transition-colors duration-150"
             onClick={() => setView("weekly")}
           >
             Weekly
@@ -45,77 +48,87 @@ export function ReportsView({
         </div>
       </header>
 
-      <div className="grid gap-2 md:grid-cols-4">
+      <div className="grid animate-in fade-in-0 slide-in-from-bottom-1 gap-3 duration-200 fill-mode-both md:grid-cols-4">
         <ReportStat label="Scheduled" value={`${sum(rows, "scheduledHours").toFixed(1)}h`} />
         <ReportStat label="Actual" value={`${sum(rows, "actualHours").toFixed(1)}h`} />
         <ReportStat
           label="Variance"
-          value={`${sum(rows, "variance").toFixed(1)}h`}
+          value={`${sum(rows, "variance") > 0 ? "+" : ""}${sum(rows, "variance").toFixed(1)}h`}
           variance={sum(rows, "variance")}
         />
         <ReportStat label="Breaks" value={`${sum(rows, "breakHours").toFixed(1)}h`} />
       </div>
 
-      <div className="overflow-x-auto border">
-        <table className="w-full min-w-[780px] text-left text-xs">
-          <thead className="bg-muted/40 text-muted-foreground">
-            <tr>
-              <th className="border-b px-3 py-2 font-medium">Employee</th>
-              <th className="border-b px-3 py-2 font-medium">Scheduled</th>
-              <th className="border-b px-3 py-2 font-medium">Actual</th>
-              <th className="border-b px-3 py-2 font-medium">Variance</th>
-              <th className="border-b px-3 py-2 font-medium">Break</th>
-              <th className="border-b px-3 py-2 font-medium">Edited</th>
-              <th className="border-b px-3 py-2 font-medium">Attendance</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr
-                key={row.employee.id}
-                className="border-b last:border-b-0 hover:bg-muted/30 transition-colors duration-150"
-              >
-                <td className="px-3 py-2 font-medium">{row.employee.name}</td>
-                <td className="px-3 py-2 tabular-nums">{row.scheduledHours.toFixed(1)}h</td>
-                <td className="px-3 py-2 tabular-nums">{row.actualHours.toFixed(1)}h</td>
-                <td className={`px-3 py-2 tabular-nums font-medium ${varianceClass(row.variance)}`}>
-                  {row.variance > 0 ? "+" : ""}
-                  {row.variance.toFixed(1)}h
-                </td>
-                <td className="px-3 py-2 tabular-nums">{row.breakHours.toFixed(1)}h</td>
-                <td className="px-3 py-2">
-                  {row.edited ? (
-                    <Badge tone="warning">Edited</Badge>
-                  ) : (
-                    <Badge tone="neutral">Clean</Badge>
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  <div className="flex flex-wrap gap-1">
-                    {row.attendance.length ? (
-                      row.attendance.map((attendance) => (
-                        <Badge
-                          key={`${row.employee.id}-${attendance}`}
-                          tone={
-                            attendance === "late" || attendance === "no-show"
-                              ? "danger"
-                              : attendance === "unscheduled"
-                                ? "warning"
-                                : "success"
-                          }
-                        >
-                          {attendance}
-                        </Badge>
-                      ))
-                    ) : (
-                      <Badge tone="neutral">No events</Badge>
-                    )}
-                  </div>
-                </td>
+      <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border animate-in fade-in-0 slide-in-from-bottom-1 duration-200 fill-mode-both delay-75">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[780px] text-left text-sm">
+            <thead className="bg-muted/40 text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 text-xs font-semibold">Employee</th>
+                <th className="px-4 py-3 text-xs font-semibold">Scheduled</th>
+                <th className="px-4 py-3 text-xs font-semibold">Actual</th>
+                <th className="px-4 py-3 text-xs font-semibold">Variance</th>
+                <th className="px-4 py-3 text-xs font-semibold">Break</th>
+                <th className="px-4 py-3 text-xs font-semibold">Edited</th>
+                <th className="px-4 py-3 text-xs font-semibold">Attendance</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {rows.map((row) => (
+                <tr
+                  key={row.employee.id}
+                  className="transition-colors duration-150 hover:bg-muted/30"
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`flex size-8 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white ${row.employee.avatarColor}`}
+                      >
+                        {row.employee.initials}
+                      </span>
+                      <span className="font-medium">{row.employee.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 tabular-nums">{row.scheduledHours.toFixed(1)}h</td>
+                  <td className="px-4 py-3 tabular-nums">{row.actualHours.toFixed(1)}h</td>
+                  <td className={`px-4 py-3 tabular-nums font-semibold ${varianceClass(row.variance)}`}>
+                    {row.variance > 0 ? "+" : ""}{row.variance.toFixed(1)}h
+                  </td>
+                  <td className="px-4 py-3 tabular-nums">{row.breakHours.toFixed(1)}h</td>
+                  <td className="px-4 py-3">
+                    {row.edited ? (
+                      <Badge tone="warning">Edited</Badge>
+                    ) : (
+                      <Badge tone="neutral">Clean</Badge>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {row.attendance.length ? (
+                        row.attendance.map((attendance) => (
+                          <Badge
+                            key={`${row.employee.id}-${attendance}`}
+                            tone={
+                              attendance === "late" || attendance === "no-show"
+                                ? "danger"
+                                : attendance === "unscheduled"
+                                  ? "warning"
+                                  : "success"
+                            }
+                          >
+                            {attendance}
+                          </Badge>
+                        ))
+                      ) : (
+                        <Badge tone="neutral">No events</Badge>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -136,22 +149,15 @@ function ReportStat({
   value: string;
   variance?: number;
 }) {
-  const valueClass =
-    variance !== undefined
-      ? varianceClass(variance)
-      : "";
-
+  const valueClass = variance !== undefined ? varianceClass(variance) : "";
   return (
-    <div className="border p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-xl font-semibold tabular-nums ${valueClass}`}>{value}</p>
+    <div className="rounded-xl bg-card p-4 shadow-sm ring-1 ring-border transition-[box-shadow] duration-200 hover:shadow-md">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className={`mt-2 text-2xl font-bold tabular-nums tracking-tight ${valueClass}`}>{value}</p>
     </div>
   );
 }
 
-function sum(
-  rows: ReportRow[],
-  key: "scheduledHours" | "actualHours" | "variance" | "breakHours",
-) {
+function sum(rows: ReportRow[], key: "scheduledHours" | "actualHours" | "variance" | "breakHours") {
   return rows.reduce((total, row) => total + row[key], 0);
 }

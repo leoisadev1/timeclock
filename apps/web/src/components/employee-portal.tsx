@@ -79,15 +79,14 @@ function PinKeypad({
 
   return (
     <div className="grid gap-3">
-      {/* PIN dots display */}
       <div className="flex justify-center gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className={`flex size-12 items-center justify-center border-2 text-xl font-mono transition-[border-color,background-color] duration-100 ${
+            className={`flex size-12 items-center justify-center rounded-2xl text-xl font-mono ring-2 transition-[background-color,ring-color] duration-150 ${
               i < pin.length
-                ? "border-primary bg-primary/5 text-primary"
-                : "border-border bg-muted/20"
+                ? "bg-primary/10 text-primary ring-primary"
+                : "bg-muted/30 ring-border"
             }`}
           >
             {i < pin.length ? "●" : ""}
@@ -95,20 +94,19 @@ function PinKeypad({
         ))}
       </div>
 
-      {/* Keypad grid */}
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-3 gap-2">
         {keys.map((key) => (
           <button
             key={key}
             type="button"
             onClick={() => onKey(key)}
             disabled={key === "→" && pin.length !== 4}
-            className={`flex h-12 items-center justify-center border text-sm font-semibold transition-[background-color,transform] duration-100 hover:bg-muted active:translate-y-px ${
+            className={`flex h-12 items-center justify-center rounded-2xl text-sm font-semibold transition-[background-color,transform,opacity] duration-150 active:scale-[0.98] ${
               key === "→"
                 ? pin.length === 4
-                  ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "cursor-not-allowed border-border opacity-40"
-                : "border-border"
+                  ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
+                  : "cursor-not-allowed bg-muted/40 text-muted-foreground opacity-50 ring-1 ring-border"
+                : "bg-card text-foreground ring-1 ring-border hover:bg-muted/50"
             }`}
           >
             {key}
@@ -144,7 +142,7 @@ function DemoHints({ onSelect }: { onSelect: (pin: string) => void }) {
             key={emp.employeeId}
             type="button"
             onClick={() => onSelect(emp.pin)}
-            className="flex items-center gap-1.5 border border-border px-2 py-1 text-xs font-medium transition-[background-color,border-color] duration-150 hover:bg-muted"
+            className="flex items-center gap-1.5 rounded-xl bg-card px-2.5 py-1.5 text-xs font-medium ring-1 ring-border transition-colors duration-150 hover:bg-muted/50 active:scale-[0.98]"
           >
             {emp.avatarUrl ? (
               <img
@@ -264,8 +262,7 @@ function ConvexWorkspace({
 
   return (
     <div className="grid gap-4">
-      {/* Employee header */}
-      <div className="grid gap-3 border p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+      <div className="grid gap-3 rounded-xl bg-card p-4 shadow-sm ring-1 ring-border md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
         <div className="flex items-center gap-3">
           {employee.avatarUrl ? (
             <img
@@ -301,14 +298,17 @@ function ConvexWorkspace({
 
       {/* Today's events + recent history */}
       <div className="grid gap-4 xl:grid-cols-2">
-        <div className="border">
-          <div className="border-b px-3 py-2">
+        <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border">
+          <div className="bg-muted/30 px-3 py-2.5">
             <h2 className="text-sm font-medium">Today's events</h2>
           </div>
-          <div className="divide-y">
+          <div className="divide-y divide-border/60">
             {todayEvents.length ? (
               todayEvents.map((event) => (
-                <div key={event.id} className="px-3 py-2 text-xs">
+                <div
+                  key={event.id}
+                  className="px-3 py-2.5 text-xs transition-colors duration-150 hover:bg-muted/20"
+                >
                   <p className="font-medium capitalize">{event.type.replace(/_/g, " ")}</p>
                   <p className="text-muted-foreground">
                     {new Date(event.occurredAt).toLocaleTimeString("en-US", {
@@ -325,14 +325,17 @@ function ConvexWorkspace({
             )}
           </div>
         </div>
-        <div className="border">
-          <div className="border-b px-3 py-2">
+        <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border">
+          <div className="bg-muted/30 px-3 py-2.5">
             <h2 className="text-sm font-medium">Recent history</h2>
           </div>
-          <div className="divide-y">
+          <div className="divide-y divide-border/60">
             {todayTimecards.length ? (
               todayTimecards.map((tc) => (
-                <div key={tc.id} className="px-3 py-2 text-xs">
+                <div
+                  key={tc.id}
+                  className="px-3 py-2.5 text-xs transition-colors duration-150 hover:bg-muted/20"
+                >
                   <p className="font-medium">{tc.businessDate}</p>
                   <p className="text-muted-foreground">
                     {new Date(tc.clockInAt).toLocaleTimeString("en-US", {
@@ -377,7 +380,7 @@ function DemoWorkspace({
 }) {
   return (
     <div className="grid gap-4">
-      <div className="grid gap-3 border p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+      <div className="grid gap-3 rounded-xl bg-card p-4 shadow-sm ring-1 ring-border md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
         <div className="flex items-center gap-3">
           <span
             className={`grid size-12 place-items-center rounded-full ${portal.employee.avatarColor} text-sm font-semibold text-white`}
@@ -407,21 +410,21 @@ function DemoWorkspace({
       </div>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="border">
-          <div className="flex items-center gap-2 border-b px-3 py-2">
+        <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border">
+          <div className="flex items-center gap-2 bg-muted/30 px-3 py-2.5">
             <CalendarDaysIcon className="size-4 text-muted-foreground" strokeWidth={1.8} />
             <h2 className="text-sm font-medium">Published schedule</h2>
           </div>
-          <div className="divide-y">
+          <div className="divide-y divide-border/60">
             {portal.assignedShifts.map((shift) => {
               const warning = warningLabel(shift.warning);
               return (
                 <div
                   key={shift.id}
-                  className="grid gap-2 px-3 py-3 sm:grid-cols-[110px_minmax(0,1fr)_auto]"
+                  className="grid gap-2 px-3 py-3 transition-colors duration-150 hover:bg-muted/20 sm:grid-cols-[110px_minmax(0,1fr)_auto]"
                 >
                   <p className="text-xs font-semibold">{shift.day}</p>
-                  <p className="text-xs">
+                  <p className="text-xs text-muted-foreground">
                     {shift.start} – {shift.end} · {shift.position}
                   </p>
                   <div className="flex gap-1">
@@ -434,7 +437,7 @@ function DemoWorkspace({
             {portal.openShifts.map((shift) => (
               <div
                 key={shift.id}
-                className="grid gap-2 px-3 py-3 sm:grid-cols-[110px_minmax(0,1fr)_auto]"
+                className="grid gap-2 px-3 py-3 transition-colors duration-150 hover:bg-muted/20 sm:grid-cols-[110px_minmax(0,1fr)_auto]"
               >
                 <p className="text-xs font-semibold">{shift.day}</p>
                 <p className="text-xs">
@@ -450,14 +453,17 @@ function DemoWorkspace({
         </div>
 
         <aside className="grid gap-4 content-start">
-          <div className="border">
-            <div className="border-b px-3 py-2">
+          <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border">
+            <div className="bg-muted/30 px-3 py-2.5">
               <h2 className="text-sm font-medium">Today's events</h2>
             </div>
-            <div className="divide-y">
+            <div className="divide-y divide-border/60">
               {portal.todayEvents.length ? (
                 portal.todayEvents.map((event) => (
-                  <div key={event.id} className="px-3 py-2 text-xs">
+                  <div
+                    key={event.id}
+                    className="px-3 py-2.5 text-xs transition-colors duration-150 hover:bg-muted/20"
+                  >
                     <p className="font-medium capitalize">
                       {event.action.replace(/-/g, " ")}
                     </p>

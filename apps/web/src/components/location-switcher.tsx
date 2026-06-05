@@ -9,6 +9,9 @@ interface LocationSwitcherProps {
   compact?: boolean;
 }
 
+const selectClass =
+  "motion-product h-9 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30";
+
 export function LocationSwitcher({
   locations,
   value,
@@ -21,10 +24,13 @@ export function LocationSwitcher({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as LocationId)}
-        className="h-8 w-full rounded-full border border-sidebar-border bg-transparent px-3 text-xs font-medium text-sidebar-foreground outline-none transition-[border-color,box-shadow] duration-150 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+        className={selectClass}
+        aria-label="Location"
       >
         {locations.map((loc) => (
-          <option key={loc.id} value={loc.id}>{loc.name}</option>
+          <option key={loc.id} value={loc.id}>
+            {loc.name}
+          </option>
         ))}
       </select>
     );
@@ -36,10 +42,12 @@ export function LocationSwitcher({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as LocationId)}
-        className="h-10 rounded-full border border-input bg-background px-4 text-sm text-foreground outline-none transition-[border-color,box-shadow] duration-150 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30"
+        className={selectClass}
       >
         {locations.map((loc) => (
-          <option key={loc.id} value={loc.id}>{loc.name}</option>
+          <option key={loc.id} value={loc.id}>
+            {loc.name}
+          </option>
         ))}
       </select>
     </label>

@@ -25,6 +25,9 @@ interface TodayDashboardProps {
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+const panelClass =
+  "overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border";
+
 export function TodayDashboard({ data, employees: providedEmployees, onNavigate }: TodayDashboardProps) {
   const todayLabel =
     DAY_LABELS[new Date(`${data.businessDate}T00:00:00.000Z`).getUTCDay()] ?? "Mon";
@@ -34,10 +37,10 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
 
   return (
     <div className="grid gap-4">
-      <header className="grid gap-3 border-b pb-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+      <header className="flex flex-wrap items-start justify-between gap-3 animate-in fade-in-0 duration-200">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-semibold">Today</h1>
+            <h1 className="text-xl font-semibold tracking-tight">Today</h1>
             <Badge tone="primary">{data.location.name}</Badge>
             <Badge tone="neutral">{data.businessDate}</Badge>
           </div>
@@ -54,7 +57,7 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
         </div>
       </header>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid animate-in fade-in-0 slide-in-from-bottom-1 gap-3 duration-200 fill-mode-both md:grid-cols-2 xl:grid-cols-4">
         <Metric
           label="Published shifts"
           value={todaysShifts.length}
@@ -85,15 +88,15 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
         />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)]">
-        <div className="min-w-0 overflow-hidden rounded-xl shadow-sm ring-1 ring-foreground/8">
-          <div className="flex items-center justify-between bg-card px-4 py-3 border-b">
+      <section className="grid animate-in fade-in-0 slide-in-from-bottom-1 gap-4 duration-200 fill-mode-both delay-75 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)]">
+        <div className={`min-w-0 ${panelClass}`}>
+          <div className="flex items-center justify-between bg-muted/30 px-4 py-3">
             <h2 className="text-sm font-semibold">Schedule and attendance</h2>
             <Button variant="outline" size="sm" onClick={() => onNavigate("schedule")}>
               Schedule <ArrowRightIcon />
             </Button>
           </div>
-          <div className="grid divide-y">
+          <div className="grid divide-y divide-border/60">
             {todaysShifts.map((shift) => {
               const employee = shift.employeeId
                 ? employees.find((candidate) => candidate.id === shift.employeeId)
@@ -107,7 +110,7 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
               return (
                 <div
                   key={shift.id}
-                  className="grid gap-3 px-3 py-3 sm:grid-cols-[160px_minmax(0,1fr)_140px]"
+                  className="grid gap-3 px-3 py-3 transition-colors duration-150 hover:bg-muted/20 sm:grid-cols-[160px_minmax(0,1fr)_140px]"
                 >
                   <div>
                     <p className="text-xs font-semibold">
@@ -168,7 +171,7 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
             })}
           </StatusRail>
 
-          <div className="overflow-hidden rounded-xl shadow-sm ring-1 ring-foreground/8 bg-card p-4">
+          <div className={`${panelClass} p-4`}>
             <h2 className="text-sm font-semibold">Quick links</h2>
             <div className="mt-3 grid gap-2">
               <Button variant="outline" onClick={() => onNavigate("schedule")}>
@@ -200,8 +203,8 @@ function Metric({
 }) {
   const iconClass = {
     neutral: "text-foreground",
-    success: "text-emerald-600",
-    warning: "text-amber-600",
+    success: "text-emerald-600 dark:text-emerald-400",
+    warning: "text-amber-600 dark:text-amber-400",
     danger: "text-destructive",
   }[tone];
 
@@ -213,10 +216,14 @@ function Metric({
   }[tone];
 
   return (
-    <div className={`rounded-xl p-4 shadow-sm ring-1 ring-foreground/8 transition-all duration-200 hover:shadow-md ${bgClass}`}>
+    <div
+      className={`rounded-xl p-4 shadow-sm ring-1 ring-border transition-[box-shadow,transform] duration-200 hover:shadow-md ${bgClass}`}
+    >
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        <div className={`flex size-7 items-center justify-center rounded-full bg-background/80 ${iconClass}`}>
+        <div
+          className={`flex size-7 items-center justify-center rounded-full bg-background/80 ring-1 ring-border/60 ${iconClass}`}
+        >
           <Icon className="size-3.5" strokeWidth={2} />
         </div>
       </div>
@@ -272,19 +279,19 @@ function StatusRail({
   children: ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl shadow-sm ring-1 ring-foreground/8">
-      <div className="flex items-center gap-2 bg-card border-b px-4 py-3">
+    <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border">
+      <div className="flex items-center gap-2 bg-muted/30 px-4 py-3">
         <Icon className="size-4 text-muted-foreground" strokeWidth={1.8} />
         <h2 className="text-sm font-semibold">{title}</h2>
       </div>
-      <div className="divide-y bg-card">{children}</div>
+      <div className="divide-y divide-border/60 bg-card">{children}</div>
     </div>
   );
 }
 
 function PersonLine({ name, detail }: { name: string; detail: string }) {
   return (
-    <div className="px-3 py-2">
+    <div className="px-3 py-2 transition-colors duration-150 hover:bg-muted/20">
       <p className="text-xs font-medium">{name}</p>
       <p className="text-xs text-muted-foreground">{detail}</p>
     </div>

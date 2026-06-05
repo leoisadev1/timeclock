@@ -32,23 +32,21 @@ export function SettingsView({
 
   return (
     <div className="grid gap-4">
-      <header className="border-b pb-4">
-        <h1 className="text-xl font-semibold">Settings</h1>
+      <header className="animate-in fade-in-0 duration-200">
+        <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
         <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
           MVP location controls for timezone, week start, grace/no-show thresholds, and operating
           hours.
         </p>
       </header>
 
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <section className="grid animate-in fade-in-0 slide-in-from-bottom-1 gap-4 duration-200 fill-mode-both lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="grid gap-4">
-          <div className="border-b pb-1">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Location settings
-            </h2>
-          </div>
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Location settings
+          </h2>
           <form
-            className="grid gap-4 border p-4"
+            className="grid gap-4 rounded-xl bg-card p-5 shadow-sm ring-1 ring-border"
             onSubmit={async (event) => {
               event.preventDefault();
               const form = new FormData(event.currentTarget);
@@ -98,15 +96,18 @@ export function SettingsView({
           </form>
         </div>
 
-        <aside className="border">
-          <div className="border-b px-3 py-2">
-            <h2 className="text-sm font-medium">Operating hours</h2>
+        <aside className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border">
+          <div className="bg-muted/30 px-4 py-3">
+            <h2 className="text-sm font-semibold">Operating hours</h2>
           </div>
-          <div className="divide-y">
+          <div className="divide-y divide-border/60">
             {Object.entries(location.operatingHours).map(([day, hours]) => {
               const open = isOpenToday(hours);
               return (
-                <div key={day} className="flex items-center justify-between px-3 py-2 text-xs">
+                <div
+                  key={day}
+                  className="flex items-center justify-between px-3 py-2.5 text-xs transition-colors duration-150 hover:bg-muted/20"
+                >
                   <span className="font-medium">{day}</span>
                   <div className="flex items-center gap-2">
                     <span
@@ -119,7 +120,7 @@ export function SettingsView({
                       {open ? "Open" : "Closed"}
                     </span>
                     {open ? (
-                      <span className="text-muted-foreground tabular-nums">{hours}</span>
+                      <span className="tabular-nums text-muted-foreground">{hours}</span>
                     ) : null}
                   </div>
                 </div>
