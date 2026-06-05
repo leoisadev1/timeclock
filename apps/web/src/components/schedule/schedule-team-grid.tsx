@@ -10,8 +10,8 @@ import { calculateShiftHours } from "@/lib/timeclock-adapter";
 import type { Employee, Shift } from "@/lib/timeclock-types";
 import { CalendarDaysIcon, CircleIcon, EyeIcon } from "lucide-react";
 
-const TEAM_COLUMN_WIDTH = "minmax(15.5rem, 18rem)";
-const DAY_COLUMN_WIDTH = "minmax(9.5rem, 1fr)";
+const TEAM_COLUMN_WIDTH = "minmax(13rem, 15rem)";
+const DAY_COLUMN_WIDTH = "minmax(10.75rem, 1fr)";
 
 type WeekDate = { day: ScheduleDay; iso: string };
 

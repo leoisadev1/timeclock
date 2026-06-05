@@ -50,10 +50,10 @@ export function ScheduleShiftCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className={`truncate text-sm font-bold leading-snug tabular-nums ${style.title}`}>
+          <p className={`whitespace-nowrap text-[12px] font-bold leading-tight tabular-nums ${style.title}`}>
             {shift.start}–{shift.end}
           </p>
-          <h3 className={`truncate text-sm font-medium leading-snug ${style.title}`}>{shift.position}</h3>
+          <h3 className={`truncate text-[12px] font-medium leading-tight ${style.title}`}>{shift.position}</h3>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger
