@@ -1,21 +1,17 @@
 import { AppShell, type ManagerView } from "@/components/app-shell";
+import { AlertsCornerIndicator } from "@/components/alerts-corner-indicator";
 import { employeeAvatarUrl } from "@/components/employee-avatar";
 import { EmployeesView } from "@/components/employees-view";
 import { ReportsView } from "@/components/reports-view";
 import { ScheduleBuilder } from "@/components/schedule-builder";
 import { SettingsView } from "@/components/settings-view";
-import { TodayDashboard } from "@/components/today-dashboard";
 import type {
-  AttendanceStatus,
   Employee,
   Location,
   LocationId,
   Position,
   ScheduleWeek,
   Shift,
-  TimeEvent,
-  Timecard,
-  TodayDashboard as TodayDashboardData,
 } from "@/lib/timeclock-types";
 import { useAuth } from "@clerk/tanstack-react-start";
 import { api } from "@timeclock/backend/convex/_generated/api";
@@ -57,7 +53,6 @@ const AVATAR_COLORS = [
 type ConvexLocation = NonNullable<
   NonNullable<ReturnType<typeof useQuery<typeof api.locations.listForCurrentUser>>>[number]
 >;
-type ConvexDashboard = NonNullable<ReturnType<typeof useQuery<typeof api.today.getDashboard>>>;
 type ConvexWeek = NonNullable<ReturnType<typeof useQuery<typeof api.schedules.getWeek>>>;
 type ConvexEmployees = NonNullable<
   ReturnType<typeof useQuery<typeof api.employees.listByLocation>>
@@ -175,13 +170,6 @@ function normalizePosition(position: string | null | undefined): Position {
   return POSITIONS.includes(position as Position) ? (position as Position) : "Barista";
 }
 
-function normalizeAttendance(status: string | null | undefined): AttendanceStatus {
-  if (status === "on_time") return "on-time";
-  if (status === "no_show") return "no-show";
-  if (status === "early" || status === "late" || status === "unscheduled") return status;
-  return "on-time";
-}
-
 function mapConvexLocation(loc: ConvexLocation): Location {
   return {
     id: loc.id,
@@ -270,101 +258,6 @@ function mapScheduleWeek(week: ConvexWeek, locationId: LocationId): ScheduleWeek
   };
 }
 
-function mapTimecard(row: ConvexDashboard["clockedIn"][number], locationId: LocationId): Timecard {
-  return {
-    id: row.timecardId,
-    employeeId: row.employeeId,
-    locationId,
-    businessDate: row.businessDate,
-    status:
-      row.status === "clocked_in"
-        ? "clocked-in"
-        : row.status === "on_break"
-          ? "on-break"
-          : "clocked-out",
-    attendance: normalizeAttendance(row.attendanceStatus),
-    clockIn: row.clockInAt ? formatTime(row.clockInAt, row.timezone) : undefined,
-    clockOut: row.clockOutAt ? formatTime(row.clockOutAt, row.timezone) : undefined,
-    breakMinutes: row.totalBreakMinutes ?? 0,
-  };
-}
-
-function employeeFromDashboardRow(
-  row: ConvexDashboard["scheduledNotClockedIn"][number],
-  locationId: LocationId,
-): Employee {
-  const id = row.employeeId ?? row.shiftId;
-  return {
-    id,
-    name: row.displayName,
-    initials: initials(row.displayName),
-    avatarColor: avatarColor(id),
-    avatarUrl: employeeAvatarUrl(id, row.displayName, row.avatarUrl),
-    pin: "0000",
-    role: row.role,
-    position: normalizePosition(row.positionName),
-    active: true,
-    assignedLocationIds: [locationId],
-  };
-}
-
-function mapDashboard(
-  data: ConvexDashboard,
-  location: Location,
-  schedule: ScheduleWeek,
-): TodayDashboardData {
-  const recentEvents: TimeEvent[] = data.recentPunches.map((event) => ({
-    id: event.eventId,
-    employeeId: event.employeeId,
-    locationId: location.id,
-    businessDate: data.businessDate,
-    time: formatTime(event.occurredAt, data.timezone),
-    action:
-      event.type === "clock_in"
-        ? "clock-in"
-        : event.type === "start_break"
-          ? "start-break"
-          : event.type === "end_break"
-            ? "end-break"
-            : "clock-out",
-    source: event.source,
-  }));
-
-  return {
-    location,
-    businessDate: data.businessDate,
-    schedule,
-    scheduledNotClockedIn: data.scheduledNotClockedIn.map((row) =>
-      employeeFromDashboardRow(row, location.id),
-    ),
-    clockedIn: data.clockedIn.map((row) => mapTimecard(row, location.id)),
-    onBreak: data.onBreak.map((row) => mapTimecard(row, location.id)),
-    clockedOut: data.clockedOut.map((row) => mapTimecard(row, location.id)),
-    unscheduledClockIns: data.unscheduledClockIns.map((row) => mapTimecard(row, location.id)),
-    lateOrNoShow: [
-      ...data.late.map((row) => ({
-        employee: {
-          id: row.employeeId,
-          name: row.displayName,
-          initials: initials(row.displayName),
-          avatarColor: avatarColor(row.employeeId),
-          pin: "0000",
-          role: row.role,
-          position: normalizePosition(row.positionName),
-          active: true,
-          assignedLocationIds: [location.id],
-        },
-        status: "late" as AttendanceStatus,
-      })),
-      ...data.noShows.map((row) => ({
-        employee: employeeFromDashboardRow(row, location.id),
-        status: "no-show" as AttendanceStatus,
-      })),
-    ],
-    recentEvents,
-  };
-}
-
 function shiftPayload(
   shift: Shift,
   schedule: ScheduleWeek,
@@ -399,6 +292,7 @@ function RouteComponent() {
     history: "replace",
     shallow: true,
   });
+  const updateSearch = setDashboardSearch;
   const auth = useAuth();
   const todayDateString = new Date().toLocaleDateString("en-CA");
   const isSignedIn = auth.isSignedIn === true;
@@ -440,6 +334,11 @@ function RouteComponent() {
   const effectiveLocationId = activeLocation?.id ?? "";
   const activeConvexLocation = hasConvexLocations ? convexLocations[safeIndex] : undefined;
   const convexLocationId = activeConvexLocation?.id ?? null;
+
+  useEffect(() => {
+    scheduleWeekCacheRef.current = null;
+  }, [convexLocationId]);
+
   const weekStartDate = getWeekStartDate(
     todayDateString,
     activeLocation?.weekStart === "Sunday" ? 0 : 1,
@@ -447,14 +346,6 @@ function RouteComponent() {
   const nextWeekStartDate = addDays(weekStartDate, 7);
   const effectiveViewingWeek = viewingWeekStart ?? nextWeekStartDate;
 
-  const convexDashboard = useQuery(
-    api.today.getDashboard,
-    convexLocationId ? { locationId: convexLocationId, businessDate: todayDateString } : "skip",
-  );
-  const currentWeek = useQuery(
-    api.schedules.getWeek,
-    convexLocationId ? { locationId: convexLocationId, weekStartDate } : "skip",
-  );
   const viewingWeek = useQuery(
     api.schedules.getWeek,
     convexLocationId
@@ -579,9 +470,6 @@ function RouteComponent() {
         : undefined,
     [convexEmployees, convexLocationId],
   );
-  const currentSchedule = currentWeek
-    ? mapScheduleWeek(currentWeek, effectiveLocationId)
-    : undefined;
   const mappedViewingWeek = viewingWeek ? mapScheduleWeek(viewingWeek, effectiveLocationId) : null;
   const viewingWeekMatches =
     mappedViewingWeek?.weekStartDate === effectiveViewingWeek &&
@@ -619,18 +507,22 @@ function RouteComponent() {
     [viewingWeek, viewingWeekMatches],
   );
 
-  const dashboardData: TodayDashboardData | undefined =
-    convexDashboard && currentWeek && activeLocation && currentSchedule
-      ? mapDashboard(convexDashboard, activeLocation, currentSchedule)
+  const alertCount = useMemo(() => {
+    if (viewingWeekMatches && viewingWeek?.warnings?.length) {
+      return viewingWeek.warnings.length;
+    }
+    const shifts =
+      (viewingWeekMatches && mappedViewingWeek ? mappedViewingWeek : schedule)?.shifts ?? [];
+    return shifts.filter((shift) => shift.warning && shift.warning !== "open-shift").length;
+  }, [mappedViewingWeek, schedule, viewingWeek, viewingWeekMatches]);
+
+  const alertLabel =
+    alertCount > 0
+      ? `${alertCount} schedule ${alertCount === 1 ? "warning" : "warnings"}`
       : undefined;
 
   if (!auth.isLoaded) {
-    return (
-      <DashboardState
-        title="Loading session"
-        detail="Confirming your Clerk sign-in before opening the manager workspace."
-      />
-    );
+    return <DashboardBlank />;
   }
 
   if (
@@ -639,14 +531,10 @@ function RouteComponent() {
     (demoStatus?.seeded && linkPending && !hasConvexLocations)
   ) {
     return (
-      <DashboardState
-        title="Loading workspace"
-        detail={
-          demoStatus?.seeded
-            ? "Connecting your account to the seeded demo locations."
-            : "Checking manager access and locations."
-        }
-      />
+      <>
+        <DashboardBlank />
+        <AlertsCornerIndicator count={alertCount} label={alertLabel} />
+      </>
     );
   }
 
@@ -713,6 +601,8 @@ function RouteComponent() {
       activeView={activeView}
       locations={locations}
       locationId={effectiveLocationId}
+      alertCount={alertCount}
+      alertLabel={alertLabel}
       onLocationChange={(id) => {
         updateSearch({ location: id, week: undefined });
       }}
@@ -740,19 +630,6 @@ function RouteComponent() {
           : undefined
       }
     >
-      {activeView === "today" &&
-        (dashboardData ? (
-          <TodayDashboard
-            data={dashboardData}
-            employees={employees ?? []}
-            onNavigate={(view) => updateSearch({ view })}
-          />
-        ) : (
-          <DashboardState
-            title="Loading today"
-            detail="Fetching live schedule and attendance data."
-          />
-        ))}
       {activeView === "schedule" &&
         (schedule && viewingWeek ? (
           <ScheduleBuilder
@@ -800,10 +677,7 @@ function RouteComponent() {
             }}
           />
         ) : (
-          <DashboardState
-            title="Loading schedule"
-            detail="Fetching the live schedule from Convex."
-          />
+          <ViewBlank />
         ))}
       {activeView === "employees" && (
         <EmployeesView
@@ -884,6 +758,14 @@ function RouteComponent() {
       )}
     </AppShell>
   );
+}
+
+function DashboardBlank() {
+  return <div className="min-h-svh bg-background" aria-busy="true" aria-label="Loading" />;
+}
+
+function ViewBlank() {
+  return <div className="min-h-full bg-background" aria-busy="true" aria-label="Loading" />;
 }
 
 function DashboardState({

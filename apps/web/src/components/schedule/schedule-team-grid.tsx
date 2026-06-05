@@ -9,7 +9,6 @@ import { ScheduleShiftCard } from "@/components/schedule/schedule-shift-card";
 import { calculateShiftHours } from "@/lib/timeclock-adapter";
 import type { Employee, Shift } from "@/lib/timeclock-types";
 import { cn } from "@timeclock/ui/lib/utils";
-import { EyeIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 const TEAM_COLUMN_WIDTH = "13rem";
@@ -202,7 +201,6 @@ function TeamRowLabel({ employee, shifts }: { employee: Employee; shifts: Shift[
           <span className="font-medium text-muted-foreground">({hours.toFixed(2)}h)</span>
         </p>
       </div>
-      <EyeIcon className="size-4 shrink-0 text-muted-foreground/35" />
     </div>
   );
 }

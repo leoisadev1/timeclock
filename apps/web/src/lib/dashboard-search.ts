@@ -2,7 +2,6 @@ import type { ManagerView } from "@/components/app-shell";
 import { parseAsString, parseAsStringLiteral } from "nuqs";
 
 export const MANAGER_VIEWS = [
-  "today",
   "schedule",
   "employees",
   "reports",
@@ -15,4 +14,4 @@ export const dashboardSearchParams = {
   week: parseAsString,
 };
 
-export const defaultManagerView = (): ManagerView => "today";
+export const defaultManagerView = (): ManagerView => "schedule";

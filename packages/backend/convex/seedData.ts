@@ -562,7 +562,7 @@ type ShiftTemplate = {
   startMinutes: number;
   endMinutes: number;
   position: string;
-  pin: string;
+  pin?: string;
   notes?: string;
 };
 
@@ -586,6 +586,14 @@ const weeklyShiftTemplates: Record<string, ShiftTemplate[]> = {
       pin: "6842",
     },
     { dayOfWeek: 1, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Barista", pin: "7935" },
+    {
+      dayOfWeek: 1,
+      startMinutes: 15 * 60,
+      endMinutes: 19 * 60,
+      position: "Cashier",
+      pin: "3882",
+      notes: "Demo alert: overlaps Jordan's morning shift.",
+    },
 
     { dayOfWeek: 2, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Barista", pin: "2461" },
     { dayOfWeek: 2, startMinutes: 7 * 60, endMinutes: 15 * 60, position: "Cook", pin: "3570" },
@@ -605,6 +613,13 @@ const weeklyShiftTemplates: Record<string, ShiftTemplate[]> = {
       pin: "6842",
     },
     { dayOfWeek: 3, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Barista", pin: "7935" },
+    {
+      dayOfWeek: 3,
+      startMinutes: 10 * 60,
+      endMinutes: 16 * 60,
+      position: "Cashier",
+      notes: "Demo alert: open shift needs coverage.",
+    },
 
     { dayOfWeek: 4, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Barista", pin: "2461" },
     { dayOfWeek: 4, startMinutes: 7 * 60, endMinutes: 15 * 60, position: "Cook", pin: "3570" },
@@ -618,6 +633,14 @@ const weeklyShiftTemplates: Record<string, ShiftTemplate[]> = {
       pin: "6842",
     },
     { dayOfWeek: 4, startMinutes: 12 * 60, endMinutes: 18 * 60, position: "Barista", pin: "2145" },
+    {
+      dayOfWeek: 4,
+      startMinutes: 15 * 60,
+      endMinutes: 22 * 60,
+      position: "Barista",
+      pin: "2145",
+      notes: "Demo alert: ends after operating hours.",
+    },
 
     { dayOfWeek: 5, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Manager", pin: "1002" },
     { dayOfWeek: 5, startMinutes: 6 * 60, endMinutes: 14 * 60, position: "Barista", pin: "2145" },
@@ -775,8 +798,8 @@ async function seedWeekShifts(
       if (!positionId) {
         throw new Error(`Missing position ${template.position} for ${locationSeed.key}`);
       }
-      const employeeId = employeeIds.get(template.pin);
-      if (!employeeId) {
+      const employeeId = template.pin ? employeeIds.get(template.pin) : undefined;
+      if (template.pin && !employeeId) {
         throw new Error(`Missing employee with PIN ${template.pin}`);
       }
       const shiftId = await insertShift(

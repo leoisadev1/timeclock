@@ -1,4 +1,5 @@
 import { AppLogo } from "@/components/app-logo";
+import { AlertsCornerIndicator } from "@/components/alerts-corner-indicator";
 import { ManagerSidebarBrand } from "@/components/manager-sidebar-brand";
 import { LocationSwitcher } from "@/components/location-switcher";
 import type { Location, LocationId } from "@/lib/timeclock-types";
@@ -6,7 +7,6 @@ import { Link } from "@tanstack/react-router";
 import {
   BarChart3Icon,
   CalendarDaysIcon,
-  Clock3Icon,
   MonitorIcon,
   Settings2Icon,
   UserRoundIcon,
@@ -14,10 +14,9 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-export type ManagerView = "today" | "schedule" | "employees" | "reports" | "settings";
+export type ManagerView = "schedule" | "employees" | "reports" | "settings";
 
-const NAV: Array<{ id: ManagerView; label: string; icon: typeof Clock3Icon }> = [
-  { id: "today", label: "Today", icon: Clock3Icon },
+const NAV: Array<{ id: ManagerView; label: string; icon: typeof CalendarDaysIcon }> = [
   { id: "schedule", label: "Schedule", icon: CalendarDaysIcon },
   { id: "employees", label: "Employees", icon: UsersIcon },
   { id: "reports", label: "Reports", icon: BarChart3Icon },
@@ -36,6 +35,8 @@ interface AppShellProps {
     timezone: string;
   }) => Promise<LocationId | void>;
   createLocationPending?: boolean;
+  alertCount?: number;
+  alertLabel?: string;
   children: ReactNode;
 }
 
@@ -47,6 +48,8 @@ export function AppShell({
   onViewChange,
   onCreateLocation,
   createLocationPending = false,
+  alertCount = 0,
+  alertLabel,
   children,
 }: AppShellProps) {
   return (
@@ -172,6 +175,7 @@ export function AppShell({
           </div>
         </main>
       </div>
+      <AlertsCornerIndicator count={alertCount} label={alertLabel} />
     </div>
   );
 }
