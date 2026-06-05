@@ -76,7 +76,7 @@ function StationPunch({
 
   return (
     <Button
-      className="min-h-16 w-full text-sm font-semibold"
+      className="min-h-16 w-full rounded-2xl text-sm font-semibold transition-transform duration-150 active:scale-[0.98]"
       variant={disabled ? "outline" : "default"}
       disabled={disabled}
       onClick={() => onPunch(action)}
@@ -108,10 +108,10 @@ function StationPinKeypad({
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className={`flex size-14 items-center justify-center border-2 text-2xl font-mono transition-[border-color,background-color] duration-100 ${
+            className={`flex size-14 items-center justify-center rounded-2xl text-2xl font-mono ring-2 transition-[background-color,ring-color] duration-150 ${
               i < pin.length
-                ? "border-background bg-background/10 text-background"
-                : "border-background/30 bg-background/5"
+                ? "bg-background text-foreground ring-background"
+                : "bg-background/5 ring-background/30"
             }`}
           >
             {i < pin.length ? "●" : ""}
@@ -138,12 +138,12 @@ function StationPinKeypad({
               type="button"
               onClick={() => onKey(key)}
               disabled={key === "→" && pin.length !== 4}
-              className={`flex min-h-16 items-center justify-center border text-lg font-semibold transition-[background-color,transform] duration-100 active:translate-y-px ${
+              className={`flex min-h-16 items-center justify-center rounded-2xl text-lg font-semibold transition-[background-color,transform,opacity] duration-150 active:scale-[0.98] ${
                 key === "→"
                   ? pin.length === 4
-                    ? "border-background bg-background text-foreground hover:bg-background/90"
-                    : "cursor-not-allowed border-background/20 opacity-30"
-                  : "border-background/20 hover:bg-background/10"
+                    ? "bg-background text-foreground shadow-sm hover:bg-background/90"
+                    : "cursor-not-allowed bg-background/5 text-background/40 opacity-40 ring-1 ring-background/20"
+                  : "bg-background/5 text-background ring-1 ring-background/20 hover:bg-background/10"
               }`}
             >
               {key}
@@ -153,7 +153,7 @@ function StationPinKeypad({
       )}
 
       {error ? (
-        <div className="border border-orange-400/40 bg-orange-400/10 px-3 py-2 text-center text-sm text-orange-300">
+        <div className="rounded-xl bg-destructive/15 px-3 py-2 text-center text-sm text-destructive ring-1 ring-destructive/30">
           {error}
         </div>
       ) : null}
@@ -220,7 +220,7 @@ function ConvexEmployeePanel({
   return (
     <div className="grid gap-4 content-start animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
       {/* Employee header */}
-      <div className="border border-background/20 p-5">
+      <div className="rounded-2xl bg-background/5 p-5 ring-1 ring-background/20">
         <div className="flex items-center gap-4">
           {avatarUrl ? (
             <img
@@ -277,7 +277,7 @@ function DemoEmployeePanel({
 }) {
   return (
     <div className="grid gap-4 content-start animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
-      <div className="border border-background/20 p-5">
+      <div className="rounded-2xl bg-background/5 p-5 ring-1 ring-background/20">
         <div className="flex items-center gap-4">
           <span
             className={`grid size-16 place-items-center rounded-full ${avatarColor} text-xl font-semibold text-white`}
@@ -463,10 +463,9 @@ export function StationKiosk() {
 
   return (
     <main className="min-h-svh bg-foreground p-3 text-background">
-      <div className="mx-auto grid min-h-[calc(100svh-1.5rem)] max-w-6xl grid-rows-[auto_minmax(0,1fr)] border border-background/20 bg-foreground">
+      <div className="mx-auto grid min-h-[calc(100svh-1.5rem)] max-w-6xl grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-2xl bg-foreground ring-1 ring-background/20">
 
-        {/* Header */}
-        <header className="flex flex-col gap-3 border-b border-background/20 p-4 md:flex-row md:items-center md:justify-between">
+        <header className="flex flex-col gap-3 bg-background/5 p-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
             <ClockIcon className="size-6 text-background/60" strokeWidth={1.5} />
             <div>
@@ -492,7 +491,7 @@ export function StationKiosk() {
             ) : null}
             <Button
               variant="outline"
-              className="border-background/20 text-background hover:bg-background/10"
+              className="rounded-xl border-background/20 text-background transition-colors duration-150 hover:bg-background/10 active:scale-[0.98]"
               onClick={() => setExitConfirm(true)}
             >
               Exit station
@@ -503,14 +502,14 @@ export function StationKiosk() {
         {/* Body */}
         {!unlocked ? (
           <section className="grid place-items-center p-6">
-            <div className="w-full max-w-md border border-background/20 p-6 text-center">
+            <div className="w-full max-w-md rounded-2xl bg-background/5 p-6 text-center ring-1 ring-background/20">
               <LockKeyholeIcon className="mx-auto size-10" strokeWidth={1.6} />
-              <h2 className="mt-4 text-lg font-semibold">Manager unlock</h2>
-              <p className="mt-2 text-xs text-background/70">
+              <h2 className="mt-4 text-lg font-semibold tracking-tight">Manager unlock</h2>
+              <p className="mt-2 text-sm text-background/70">
                 Demo unlock placeholder while manager authenticated station handoff is completed.
               </p>
               <Button
-                className="mt-5 h-11 w-full"
+                className="mt-5 h-12 w-full rounded-2xl transition-transform duration-150 active:scale-[0.98]"
                 onClick={() => setUnlocked(true)}
               >
                 <ShieldCheckIcon /> Unlock station
@@ -521,8 +520,8 @@ export function StationKiosk() {
           <section className="grid gap-4 p-4 lg:grid-cols-[400px_minmax(0,1fr)]">
             {/* PIN entry */}
             <div className="grid gap-3 content-start">
-              <div className="border border-background/20 p-4">
-                <p className="mb-3 text-sm font-semibold text-background/80">Employee PIN</p>
+              <div className="rounded-2xl bg-background/5 p-4 ring-1 ring-background/20">
+                <p className="mb-3 text-sm font-semibold text-background/90">Employee PIN</p>
                 <StationPinKeypad
                   pin={pin}
                   onKey={handleKey}
@@ -555,9 +554,9 @@ export function StationKiosk() {
                   />
                 )
               ) : (
-                <div className="grid min-h-80 place-items-center border border-background/20 p-6 text-center">
+                <div className="grid min-h-80 place-items-center rounded-2xl bg-background/5 p-6 text-center ring-1 ring-background/20">
                   <div>
-                    <p className="text-lg font-semibold">Enter PIN</p>
+                    <p className="text-lg font-semibold tracking-tight">Enter PIN</p>
                     <p className="mt-2 text-sm text-background/70">
                       Active employees assigned to this location can punch here.
                     </p>
@@ -572,22 +571,22 @@ export function StationKiosk() {
       {/* Exit confirm modal */}
       {exitConfirm ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/80 p-4">
-          <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-200 w-full max-w-sm border border-background/20 bg-foreground p-5 text-background">
-            <h2 className="text-lg font-semibold">Exit station mode?</h2>
-            <p className="mt-2 text-xs text-background/70">
+          <div className="w-full max-w-sm animate-in fade-in-0 slide-in-from-bottom-2 rounded-2xl bg-foreground p-5 text-background ring-1 ring-background/20 duration-200">
+            <h2 className="text-lg font-semibold tracking-tight">Exit station mode?</h2>
+            <p className="mt-2 text-sm text-background/70">
               Manager confirmation is required before returning to normal navigation.
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <Button
                 variant="outline"
-                className="border-background/20 text-background hover:bg-background/10"
+                className="rounded-xl border-background/20 text-background transition-colors duration-150 hover:bg-background/10 active:scale-[0.98]"
                 onClick={() => setExitConfirm(false)}
               >
                 Stay
               </Button>
               <Link
                 to="/"
-                className="inline-flex h-8 items-center justify-center border border-background bg-background px-2.5 text-xs font-medium text-foreground"
+                className="inline-flex h-9 items-center justify-center rounded-xl bg-background px-3 text-xs font-medium text-foreground transition-transform duration-150 active:scale-[0.98]"
               >
                 Exit
               </Link>

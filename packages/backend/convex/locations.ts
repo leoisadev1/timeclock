@@ -3,10 +3,13 @@ import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import {
   canManageLocation,
+  error,
   getCurrentEmployee,
   getLocationHours,
+  requireCurrentEmployee,
   requireDemoCompany,
   requireLocationManager,
+  requireRole,
 } from "./shared";
 
 async function locationReadModel(ctx: Parameters<typeof getLocationHours>[0], locationId: Id<"locations">) {
@@ -155,6 +158,86 @@ export const updateSettings = mutation({
     }
 
     return await locationReadModel(ctx, args.locationId);
+  },
+});
+
+const DEFAULT_POSITIONS = [
+  { name: "Manager", color: "#2563eb" },
+  { name: "Shift Lead", color: "#0f766e" },
+  { name: "Cashier", color: "#ca8a04" },
+  { name: "Barista", color: "#9333ea" },
+  { name: "Cook", color: "#dc2626" },
+] as const;
+
+const DEFAULT_HOURS = Array.from({ length: 7 }, (_, dayOfWeek) => ({
+  dayOfWeek,
+  opensAtMinutes: 6 * 60,
+  closesAtMinutes: 18 * 60,
+  isClosed: false,
+}));
+
+export const create = mutation({
+  args: {
+    name: v.string(),
+    address: v.string(),
+    timezone: v.string(),
+    weekStartDay: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const employee = await requireCurrentEmployee(ctx);
+    requireRole(employee, ["admin", "manager"]);
+
+    const name = args.name.trim();
+    const address = args.address.trim();
+    if (!name) {
+      throw error("INVALID_NAME", "Location name is required.");
+    }
+    if (!address) {
+      throw error("INVALID_ADDRESS", "Address is required.");
+    }
+
+    const timestamp = Date.now();
+    const locationId = await ctx.db.insert("locations", {
+      companyId: employee.companyId,
+      name,
+      address,
+      timezone: args.timezone,
+      weekStartDay: args.weekStartDay ?? 1,
+      lateGraceMinutes: 5,
+      noShowThresholdMinutes: 15,
+      stationUnlockCode: String(Math.floor(1000 + Math.random() * 9000)),
+      active: true,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    });
+
+    for (const hours of DEFAULT_HOURS) {
+      await ctx.db.insert("locationHours", { locationId, ...hours });
+    }
+
+    for (const position of DEFAULT_POSITIONS) {
+      await ctx.db.insert("positions", {
+        companyId: employee.companyId,
+        locationId,
+        name: position.name,
+        color: position.color,
+        active: true,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      });
+    }
+
+    if (employee.role === "manager") {
+      await ctx.db.insert("managerLocations", {
+        managerId: employee._id,
+        locationId,
+        active: true,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      });
+    }
+
+    return await locationReadModel(ctx, locationId);
   },
 });
 

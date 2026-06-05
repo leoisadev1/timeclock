@@ -198,7 +198,7 @@ function PunchButton({
   return (
     <Button
       size="lg"
-      className="h-12 w-full"
+      className="h-12 w-full transition-transform duration-150 active:scale-[0.98]"
       variant={disabled ? "outline" : "default"}
       disabled={disabled}
       onClick={() => onPunch(action)}
@@ -261,7 +261,7 @@ function ConvexWorkspace({
   const todayTimecards = currentStatus?.todayTimecards ?? [];
 
   return (
-    <div className="grid gap-4">
+    <div className="grid animate-in fade-in-0 slide-in-from-bottom-1 gap-4 duration-200">
       <div className="grid gap-3 rounded-xl bg-card p-4 shadow-sm ring-1 ring-border md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
         <div className="flex items-center gap-3">
           {employee.avatarUrl ? (
@@ -379,7 +379,7 @@ function DemoWorkspace({
   onSignOut: () => void;
 }) {
   return (
-    <div className="grid gap-4">
+    <div className="grid animate-in fade-in-0 slide-in-from-bottom-1 gap-4 duration-200">
       <div className="grid gap-3 rounded-xl bg-card p-4 shadow-sm ring-1 ring-border md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
         <div className="flex items-center gap-3">
           <span
@@ -477,13 +477,16 @@ function DemoWorkspace({
               )}
             </div>
           </div>
-          <div className="border">
-            <div className="border-b px-3 py-2">
+          <div className="overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-border">
+            <div className="bg-muted/30 px-3 py-2.5">
               <h2 className="text-sm font-medium">Recent history</h2>
             </div>
-            <div className="divide-y">
+            <div className="divide-y divide-border/60">
               {portal.recentHistory.map((timecard) => (
-                <div key={timecard.id} className="px-3 py-2 text-xs">
+                <div
+                  key={timecard.id}
+                  className="px-3 py-2.5 text-xs transition-colors duration-150 hover:bg-muted/20"
+                >
                   <p className="font-medium">{timecard.businessDate}</p>
                   <p className="text-muted-foreground">
                     {timecard.clockIn ?? "--"} to {timecard.clockOut ?? "open"} ·{" "}
@@ -610,8 +613,8 @@ function PinPanel({
   const demoLocations = getLocations();
 
   return (
-    <div className="border p-4">
-      <h2 className="text-sm font-semibold">Enter your PIN</h2>
+    <div className="rounded-xl bg-card p-4 shadow-sm ring-1 ring-border">
+      <h2 className="text-sm font-semibold tracking-tight">Enter your PIN</h2>
 
       <div className="mt-3 mb-4">
         <LocationSwitcher
@@ -676,10 +679,13 @@ export function EmployeePortal() {
   return (
     <main className="min-h-svh bg-background text-foreground">
       <div className="mx-auto max-w-5xl px-4 py-6">
-        <header className="mb-6 flex flex-col gap-2 border-b pb-4 sm:flex-row sm:items-end sm:justify-between">
+        <header className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <Badge tone="primary">Employee web</Badge>
-            <h1 className="mt-2 text-xl font-semibold">Employee Sign In</h1>
+            <h1 className="mt-2 text-xl font-semibold tracking-tight">Employee Sign In</h1>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Sign in with your PIN to clock in, take breaks, and view your schedule.
+            </p>
           </div>
         </header>
 
@@ -707,7 +713,7 @@ export function EmployeePortal() {
               />
             )
           ) : (
-            <div className="grid min-h-80 place-items-center border bg-muted/20 p-6 text-center">
+            <div className="grid min-h-80 place-items-center rounded-xl bg-muted/20 p-6 text-center ring-1 ring-border">
               <div>
                 <Clock3Icon
                   className="mx-auto size-8 text-muted-foreground"

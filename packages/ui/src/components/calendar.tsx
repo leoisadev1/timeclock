@@ -14,7 +14,10 @@ function parseDate(value: string | Date): Date {
   if (value instanceof Date) {
     return new Date(value.getFullYear(), value.getMonth(), value.getDate());
   }
-  const [y, m, d] = value.split("-").map(Number);
+  const parts = value.split("-").map(Number);
+  const y = parts[0] ?? 0;
+  const m = parts[1] ?? 1;
+  const d = parts[2] ?? 1;
   return new Date(y, m - 1, d);
 }
 
@@ -87,7 +90,11 @@ function Calendar({
     });
   }
   while (cells.length % 7 !== 0) {
-    const last = cells[cells.length - 1].date;
+    const lastCell = cells[cells.length - 1];
+    if (!lastCell) {
+      break;
+    }
+    const last = lastCell.date;
     const next = new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1);
     cells.push({ date: next, inMonth: false });
   }
@@ -100,7 +107,7 @@ function Calendar({
   return (
     <div
       data-slot="calendar"
-      className={cn("w-[280px] rounded-xl bg-card p-3 shadow-sm ring-1 ring-border", className)}
+      className={cn("w-[320px] rounded-xl bg-card p-4 shadow-sm ring-1 ring-border", className)}
     >
       <div className="mb-3 flex items-center justify-between gap-2">
         <Button
@@ -149,7 +156,7 @@ function Calendar({
               disabled={!inMonth}
               onClick={() => onSelect?.(date)}
               className={cn(
-                "flex size-9 items-center justify-center rounded-lg text-sm transition-[background-color,color,opacity] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                "flex size-10 items-center justify-center rounded-lg text-sm transition-[background-color,color,opacity] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                 !inMonth && "pointer-events-none opacity-30",
                 inMonth && !selectedDay && "text-foreground hover:bg-muted",
                 selectedDay && "bg-primary font-semibold text-primary-foreground",

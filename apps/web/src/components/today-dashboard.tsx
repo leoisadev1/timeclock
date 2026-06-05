@@ -37,55 +37,55 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
 
   return (
     <div className="grid gap-4">
-      <header className="flex flex-wrap items-start justify-between gap-3 animate-in fade-in-0 duration-200">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-semibold tracking-tight">Today</h1>
-            <Badge tone="primary">{data.location.name}</Badge>
-            <Badge tone="neutral">{data.businessDate}</Badge>
+      <section className={`${panelClass} animate-in fade-in-0 duration-200`}>
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border px-4 py-4 sm:px-5">
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              {data.location.name}
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight">Today</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {formatBusinessDate(data.businessDate)} · {totalHours.toFixed(1)}h scheduled
+            </p>
           </div>
-          <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-            Published schedule, live punch status, and attendance exceptions for the active location.
-          </p>
+          <div className="flex items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+            <span className="relative flex size-2">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-40" />
+              <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+            </span>
+            Live
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
-          <span className="relative flex size-1.5">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-30" />
-            <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
-          </span>
-          Polling every 8s
-        </div>
-      </header>
 
-      <section className="grid animate-in fade-in-0 slide-in-from-bottom-1 gap-3 duration-200 fill-mode-both md:grid-cols-2 xl:grid-cols-4">
-        <Metric
-          label="Published shifts"
-          value={todaysShifts.length}
-          detail={`${totalHours.toFixed(1)} scheduled hours`}
-          icon={Clock3Icon}
-          tone="neutral"
-        />
-        <Metric
-          label="Clocked in"
-          value={data.clockedIn.length}
-          detail="Working now"
-          icon={UserCheckIcon}
-          tone="success"
-        />
-        <Metric
-          label="On break"
-          value={data.onBreak.length}
-          detail="Break in progress"
-          icon={CoffeeIcon}
-          tone="warning"
-        />
-        <Metric
-          label="Exceptions"
-          value={data.lateOrNoShow.length + data.unscheduledClockIns.length}
-          detail="Late, no-show, unscheduled"
-          icon={AlertTriangleIcon}
-          tone="danger"
-        />
+        <div className="grid divide-y divide-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+          <StatCell
+            label="Published shifts"
+            value={todaysShifts.length}
+            detail={`${totalHours.toFixed(1)}h on roster`}
+            icon={Clock3Icon}
+          />
+          <StatCell
+            label="Clocked in"
+            value={data.clockedIn.length}
+            detail="Working now"
+            icon={UserCheckIcon}
+            accent="success"
+          />
+          <StatCell
+            label="On break"
+            value={data.onBreak.length}
+            detail="Away from floor"
+            icon={CoffeeIcon}
+            accent="warning"
+          />
+          <StatCell
+            label="Exceptions"
+            value={data.lateOrNoShow.length + data.unscheduledClockIns.length}
+            detail="Needs review"
+            icon={AlertTriangleIcon}
+            accent="danger"
+          />
+        </div>
       </section>
 
       <section className="grid animate-in fade-in-0 slide-in-from-bottom-1 gap-4 duration-200 fill-mode-both delay-75 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)]">
@@ -188,47 +188,56 @@ export function TodayDashboard({ data, employees: providedEmployees, onNavigate 
   );
 }
 
-function Metric({
+function formatBusinessDate(iso: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(`${iso}T12:00:00`));
+}
+
+function StatCell({
   label,
   value,
   detail,
   icon: Icon,
-  tone = "neutral",
+  accent,
 }: {
   label: string;
   value: number;
   detail: string;
   icon: typeof Clock3Icon;
-  tone?: "neutral" | "success" | "warning" | "danger";
+  accent?: "success" | "warning" | "danger";
 }) {
-  const iconClass = {
-    neutral: "text-foreground",
-    success: "text-emerald-600 dark:text-emerald-400",
-    warning: "text-amber-600 dark:text-amber-400",
-    danger: "text-destructive",
-  }[tone];
-
-  const bgClass = {
-    neutral: "bg-card",
-    success: "bg-emerald-500/8 dark:bg-emerald-500/10",
-    warning: "bg-amber-500/8 dark:bg-amber-500/10",
-    danger: "bg-destructive/8 dark:bg-destructive/10",
-  }[tone];
+  const valueClass =
+    accent === "success"
+      ? "text-emerald-600 dark:text-emerald-400"
+      : accent === "warning"
+        ? "text-amber-600 dark:text-amber-400"
+        : accent === "danger"
+          ? "text-destructive"
+          : "text-foreground";
 
   return (
-    <div
-      className={`rounded-xl p-4 shadow-sm ring-1 ring-border transition-[box-shadow,transform] duration-200 hover:shadow-md ${bgClass}`}
-    >
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        <div
-          className={`flex size-7 items-center justify-center rounded-full bg-background/80 ring-1 ring-border/60 ${iconClass}`}
-        >
-          <Icon className="size-3.5" strokeWidth={2} />
-        </div>
+    <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
+      <div
+        className={`flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/60 ${
+          accent === "success"
+            ? "text-emerald-600 dark:text-emerald-400"
+            : accent === "warning"
+              ? "text-amber-600 dark:text-amber-400"
+              : accent === "danger"
+                ? "text-destructive"
+                : "text-muted-foreground"
+        }`}
+      >
+        <Icon className="size-4" strokeWidth={2} />
       </div>
-      <p className="mt-3 text-3xl font-bold tabular-nums tracking-tight">{value}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className={`text-2xl font-bold tabular-nums leading-none ${valueClass}`}>{value}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+      </div>
     </div>
   );
 }

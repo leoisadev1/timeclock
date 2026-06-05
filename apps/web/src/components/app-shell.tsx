@@ -1,4 +1,5 @@
 import { AppLogo } from "@/components/app-logo";
+import { ManagerSidebarBrand } from "@/components/manager-sidebar-brand";
 import { LocationSwitcher } from "@/components/location-switcher";
 import type { Location, LocationId } from "@/lib/timeclock-types";
 import { Link } from "@tanstack/react-router";
@@ -23,20 +24,14 @@ const NAV: Array<{ id: ManagerView; label: string; icon: typeof Clock3Icon }> = 
   { id: "settings", label: "Settings", icon: Settings2Icon },
 ];
 
-const VIEW_LABEL: Record<ManagerView, string> = {
-  today: "Today",
-  schedule: "Schedule",
-  employees: "Employees",
-  reports: "Reports",
-  settings: "Settings",
-};
-
 interface AppShellProps {
   activeView: ManagerView;
   locations: Location[];
   locationId: LocationId;
   onLocationChange: (locationId: LocationId) => void;
   onViewChange: (view: ManagerView) => void;
+  onCreateLocation?: (input: { name: string; address: string; timezone: string }) => Promise<LocationId | void>;
+  createLocationPending?: boolean;
   children: ReactNode;
 }
 
@@ -46,30 +41,26 @@ export function AppShell({
   locationId,
   onLocationChange,
   onViewChange,
+  onCreateLocation,
+  createLocationPending = false,
   children,
 }: AppShellProps) {
-  const activeLocation = locations.find((l) => l.id === locationId) ?? locations[0];
-
   return (
     <div className="flex h-svh overflow-hidden bg-background text-foreground">
       {/* Desktop sidebar — flat, sidebar tokens */}
       <aside className="hidden w-[220px] shrink-0 flex-col bg-sidebar lg:flex">
-        <div className="px-3 pt-4 pb-2">
-          <div className="motion-product flex items-center gap-2.5 rounded-xl bg-sidebar-accent/50 px-3 py-2.5 hover:bg-sidebar-accent">
-            <AppLogo className="size-8" />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold leading-tight text-sidebar-foreground">
-                Timeclock
-              </p>
-              <p className="truncate text-xs leading-tight text-sidebar-foreground/50">
-                Manager workspace
-              </p>
-            </div>
-          </div>
-        </div>
+        <ManagerSidebarBrand />
 
         <div className="px-3 pb-3">
-          <LocationSwitcher locations={locations} value={locationId} onChange={onLocationChange} compact />
+          <LocationSwitcher
+            locations={locations}
+            value={locationId}
+            onChange={onLocationChange}
+            compact
+            allowCreate={Boolean(onCreateLocation)}
+            onCreateLocation={onCreateLocation}
+            createPending={createLocationPending}
+          />
         </div>
 
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-2">
@@ -129,11 +120,19 @@ export function AppShell({
         {/* Mobile chrome */}
         <header className="flex h-14 shrink-0 items-center justify-between bg-sidebar px-4 lg:hidden">
           <div className="flex items-center gap-2.5">
-            <AppLogo className="size-7" />
-            <span className="text-sm font-semibold text-sidebar-foreground">Timeclock</span>
+            <AppLogo className="size-9" />
+            <span className="text-lg font-bold tracking-tight text-sidebar-foreground">Timeclock</span>
           </div>
-          <div className="w-44">
-            <LocationSwitcher locations={locations} value={locationId} onChange={onLocationChange} compact />
+          <div className="w-48">
+            <LocationSwitcher
+              locations={locations}
+              value={locationId}
+              onChange={onLocationChange}
+              compact
+              allowCreate={Boolean(onCreateLocation)}
+              onCreateLocation={onCreateLocation}
+              createPending={createLocationPending}
+            />
           </div>
         </header>
 
@@ -161,15 +160,6 @@ export function AppShell({
 
         <main className="flex min-h-0 flex-1 flex-col p-3 lg:p-4">
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border">
-            <header className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-border bg-card/95 px-4 py-3 backdrop-blur-sm sm:px-5">
-              <div className="min-w-0">
-                <h1 className="truncate text-sm font-semibold text-foreground">
-                  {VIEW_LABEL[activeView]}
-                </h1>
-                <p className="truncate text-xs text-muted-foreground">{activeLocation?.name}</p>
-              </div>
-            </header>
-
             <div
               key={activeView}
               className="animate-view-enter min-h-0 flex-1 overflow-y-auto p-4 sm:p-5"

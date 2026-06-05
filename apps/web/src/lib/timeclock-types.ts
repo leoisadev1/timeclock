@@ -25,6 +25,7 @@ export interface Employee {
   name: string;
   initials: string;
   avatarColor: string;
+  avatarUrl?: string;
   pin: string;
   role: AppRole;
   position: Position;

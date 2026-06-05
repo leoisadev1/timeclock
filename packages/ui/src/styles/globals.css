@@ -40,6 +40,10 @@
   --sidebar-accent-foreground: oklch(0 0 0);
   --sidebar-border: oklch(0.9401 0 0);
   --sidebar-ring: oklch(0 0 0);
+  --sidebar-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --product-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --sidebar-duration-open: 300ms;
+  --sidebar-duration-close: 200ms;
   --font-sans: Geist, system-ui, sans-serif;
   --font-serif: Lora, serif;
   --font-mono: Geist Mono, ui-monospace, monospace;
@@ -175,6 +179,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Universal selector also covers .sidebar-motion* transition utilities. */
   *, ::before, ::after {
     scroll-behavior: auto !important;
     animation-duration: 0.001ms !important;
@@ -188,7 +193,20 @@
     transition-property: background-color, border-color, color, box-shadow, opacity,
       transform;
     transition-duration: 180ms;
-    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    transition-timing-function: var(--product-ease);
+  }
+
+  .sidebar-motion {
+    transition-property: left, right, width, opacity, transform;
+    transition-timing-function: var(--sidebar-ease);
+  }
+
+  .sidebar-motion-open {
+    transition-duration: var(--sidebar-duration-open);
+  }
+
+  .sidebar-motion-close {
+    transition-duration: var(--sidebar-duration-close);
   }
 
   .motion-press {
@@ -211,7 +229,7 @@
   }
 
   .animate-view-enter {
-    animation: view-enter 200ms ease-out;
+    animation: view-enter 200ms var(--product-ease);
   }
 }
 
