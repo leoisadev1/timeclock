@@ -18,11 +18,13 @@ import type {
   Timecard,
   TodayDashboard as TodayDashboardData,
 } from "@/lib/timeclock-types";
+import { SignInButton, useAuth } from "@clerk/tanstack-react-start";
 import { api } from "@timeclock/backend/convex/_generated/api";
 import type { Id } from "@timeclock/backend/convex/_generated/dataModel";
 import { Button } from "@timeclock/ui/components/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -481,6 +483,7 @@ function shiftPayload(
 function RouteComponent() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
+  const auth = useAuth();
   const todayDateString = new Date().toLocaleDateString("en-CA");
   const rawConvexLocations = useQuery(api.locations.listForCurrentUser);
   const convexLocations = (rawConvexLocations ?? []).filter(
@@ -592,16 +595,35 @@ function RouteComponent() {
     return (
       <DashboardState
         title="No live manager data"
-        detail="Your current Clerk login is not linked to a seeded manager record yet."
-        actionLabel="Use demo manager access"
-        onAction={async () => {
-          await claimDemoManager({
-            email: "manager@timeclock.demo",
-            password: "demo-manager",
-          });
-          toast.success("Demo manager access linked");
-          window.location.reload();
-        }}
+        detail={
+          auth.isSignedIn
+            ? "Your current Clerk login is not linked to a seeded manager record yet."
+            : "Sign in with Clerk first, then link this session to the seeded demo manager."
+        }
+        action={
+          !auth.isLoaded ? null : auth.isSignedIn ? (
+            <Button
+              onClick={async () => {
+                try {
+                  await claimDemoManager({
+                    email: "manager@timeclock.demo",
+                    password: "demo-manager",
+                  });
+                  toast.success("Demo manager access linked");
+                  window.location.reload();
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Could not link demo access");
+                }
+              }}
+            >
+              Use demo manager access
+            </Button>
+          ) : (
+            <SignInButton mode="modal">
+              <Button>Sign in with Clerk</Button>
+            </SignInButton>
+          )
+        }
       />
     );
   }
@@ -729,33 +751,18 @@ function RouteComponent() {
 function DashboardState({
   title,
   detail,
-  actionLabel,
-  onAction,
+  action,
 }: {
   title: string;
   detail: string;
-  actionLabel?: string;
-  onAction?: () => Promise<void>;
+  action?: ReactNode;
 }) {
   return (
     <div className="grid min-h-svh place-items-center bg-background px-6 text-foreground">
       <div className="w-full max-w-md border p-6">
         <h1 className="text-base font-semibold">{title}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{detail}</p>
-        {actionLabel && onAction ? (
-          <Button
-            className="mt-4"
-            onClick={async () => {
-              try {
-                await onAction();
-              } catch (error) {
-                toast.error(error instanceof Error ? error.message : "Could not link demo access");
-              }
-            }}
-          >
-            {actionLabel}
-          </Button>
-        ) : null}
+        {action ? <div className="mt-4">{action}</div> : null}
       </div>
     </div>
   );
